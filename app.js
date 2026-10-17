@@ -44,7 +44,7 @@ const SPIRAL_COORDS_FLASH = [
   { num: 21, x: 1, y: 5 }, { num: 22, x: 2, y: 5 }, { num: 23, x: 3, y: 5 }, { num: 24, x: 4, y: 5 },
   { num: 25, x: 4, y: 4 }, { num: 26, x: 4, y: 3 }, { num: 27, x: 4, y: 2 }, { num: 28, x: 4, y: 1 },
   { num: 29, x: 3, y: 1 }, { num: 30, x: 2, y: 1 }, { num: 31, x: 1, y: 1 }, { num: 32, x: 1, y: 2 },
-  { num: 33, x: 1, y: 3 }, { num: 34, x: 1, y: 4 }
+  { num: 33, x: 1, y: 3 }, { num: 34, x: 1, y: 4 }, { num: 35, x: 2, y: 4 }
 ];
 
 // Coordenadas de la espiral XXL (XXL: 9x10, 85 casillas oficiales)
@@ -69,7 +69,8 @@ const SPIRAL_COORDS_XXL = [
   { num: 69, x: 3, y: 2 }, { num: 70, x: 4, y: 2 }, { num: 71, x: 5, y: 2 }, { num: 72, x: 6, y: 2 },
   { num: 73, x: 6, y: 3 }, { num: 74, x: 6, y: 4 }, { num: 75, x: 6, y: 5 }, { num: 76, x: 6, y: 6 },
   { num: 77, x: 5, y: 6 }, { num: 78, x: 4, y: 6 }, { num: 79, x: 3, y: 6 }, { num: 80, x: 3, y: 5 },
-  { num: 81, x: 3, y: 4 }, { num: 82, x: 3, y: 3 }, { num: 83, x: 4, y: 3 }, { num: 84, x: 5, y: 3 }
+  { num: 81, x: 3, y: 4 }, { num: 82, x: 3, y: 3 }, { num: 83, x: 4, y: 3 }, { num: 84, x: 5, y: 3 },
+  { num: 85, x: 5, y: 4 }
 ];
 
 // Compatibilidad
@@ -177,8 +178,7 @@ let selectedPlayerAvatarIndex = Math.floor(Math.random() * PLAYER_AVATARS.length
 
 function avatarMarkup(player, className) {
   const avatar = PLAYER_AVATARS.find(item => item.id === player.avatar) || PLAYER_AVATARS[0];
-  const isImage = avatar.id === 'smile';
-  return `<div class="${className}${isImage ? '' : ' avatar-emoji'}" data-avatar="${avatar.id}" aria-hidden="true">${isImage ? '' : avatar.emoji}</div>`;
+  return `<div class="${className} avatar-emoji" data-avatar="${avatar.id}" aria-hidden="true">${avatar.emoji}</div>`;
 }
 
 // ESTADO GLOBAL
@@ -197,7 +197,10 @@ const STATE = {
   allCards: [],
   usedCardTexts: new Set(),
   usedModeCardTexts: new Set(),
-  activeModeChoice: null
+  activeModeChoice: null,
+  deferredInstallPrompt: null,
+  isAppInstalled: false,
+  installButtonState: 'initial'
 };
 
 // ==========================================================================
@@ -514,12 +517,330 @@ class SoundEngine {
   }
 }
 
+// ==========================================================================
+// MOTOR DE AMBIENTES DINÁMICOS Y ANIMACIONES VISUALES PREMIUM (GUATOCA FX)
+// ==========================================================================
+
+class AmbientFXEngine {
+  constructor(canvasId) {
+    this.canvas = document.getElementById(canvasId);
+    if (!this.canvas) return;
+    this.ctx = this.canvas.getContext('2d');
+    this.particles = [];
+    this.maxParticles = 24;
+    this.currentMode = 'screen-players';
+    this.animId = null;
+    this.isRunning = false;
+    this.prefersReducedMotion = false;
+    this.width = 0;
+    this.height = 0;
+
+    this.checkReducedMotion();
+    this.resize();
+    window.addEventListener('resize', () => this.resize());
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) this.stop();
+      else if (!this.prefersReducedMotion) this.start();
+    });
+
+    this.initParticles();
+    this.start();
+  }
+
+  checkReducedMotion() {
+    this.prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  resize() {
+    if (!this.canvas) return;
+    const parent = this.canvas.parentElement || document.getElementById('app-container');
+    if (!parent) return;
+    const rect = parent.getBoundingClientRect ? parent.getBoundingClientRect() : { width: 480, height: 800 };
+    this.width = rect.width || 480;
+    this.height = rect.height || 800;
+    this.canvas.width = this.width;
+    this.canvas.height = this.height;
+  }
+
+  setMode(mode) {
+    this.currentMode = mode;
+    this.particles.forEach(p => this.resetParticle(p));
+  }
+
+  initParticles() {
+    this.particles = [];
+    for (let i = 0; i < this.maxParticles; i++) {
+      const p = this.createParticle();
+      p.y = Math.random() * (this.height || 800);
+      this.particles.push(p);
+    }
+  }
+
+  createParticle() {
+    const p = {};
+    this.resetParticle(p);
+    return p;
+  }
+
+  resetParticle(p) {
+    p.x = Math.random() * (this.width || 480);
+    p.y = (this.height || 800) + 10 + Math.random() * 30;
+    p.opacity = 0.2 + Math.random() * 0.55;
+    p.wobble = Math.random() * Math.PI * 2;
+    p.wobbleSpeed = 0.02 + Math.random() * 0.03;
+
+    switch (this.currentMode) {
+      case 'hammered': // Etílico (burbujas efervescentes)
+        p.type = 'bubble';
+        p.size = 3 + Math.random() * 7;
+        p.speedY = 1.2 + Math.random() * 1.8;
+        p.color = Math.random() > 0.4 ? 'rgba(5, 177, 223, ' : 'rgba(110, 231, 183, ';
+        break;
+      case 'hot': // Hot (brasas ardientes)
+        p.type = 'ember';
+        p.size = 2 + Math.random() * 5;
+        p.speedY = 1.0 + Math.random() * 1.6;
+        p.color = Math.random() > 0.5 ? 'rgba(239, 68, 68, ' : (Math.random() > 0.3 ? 'rgba(249, 115, 22, ' : 'rgba(253, 224, 71, ');
+        break;
+      case 'couple': // Pareja (corazones y polvo de estrellas)
+        p.type = Math.random() > 0.4 ? 'heart' : 'sparkle';
+        p.size = 5 + Math.random() * 6;
+        p.speedY = 0.5 + Math.random() * 0.9;
+        p.color = 'rgba(244, 114, 182, ';
+        break;
+      case 'flash': // Flash (destellos eléctricos)
+        p.type = 'electric';
+        p.size = 3 + Math.random() * 5;
+        p.speedY = 1.5 + Math.random() * 2.2;
+        p.color = Math.random() > 0.5 ? 'rgba(59, 130, 246, ' : 'rgba(147, 197, 253, ';
+        break;
+      case 'xxl': // XXL (confeti de fiesta)
+        p.type = Math.random() > 0.5 ? 'confetti' : 'bubble';
+        p.size = 3 + Math.random() * 6;
+        p.speedY = 0.8 + Math.random() * 1.4;
+        const xxlColors = ['rgba(255, 6, 167, ', 'rgba(245, 158, 11, ', 'rgba(6, 182, 212, ', 'rgba(168, 85, 247, '];
+        p.color = xxlColors[Math.floor(Math.random() * xxlColors.length)];
+        p.rot = Math.random() * Math.PI * 2;
+        p.rotSpeed = 0.04 * (Math.random() - 0.5);
+        break;
+      case 'screen-choose-game':
+        p.type = Math.random() > 0.6 ? 'sparkle' : 'bubble';
+        p.size = 4 + Math.random() * 8;
+        p.speedY = 0.6 + Math.random() * 1.0;
+        p.color = Math.random() > 0.5 ? 'rgba(192, 132, 252, ' : 'rgba(244, 114, 182, ';
+        break;
+      default: // Clásico y lobby
+        p.type = Math.random() > 0.5 ? 'bubble' : 'sparkle';
+        p.size = 4 + Math.random() * 8;
+        p.speedY = 0.6 + Math.random() * 1.1;
+        p.color = Math.random() > 0.5 ? 'rgba(192, 132, 252, ' : 'rgba(216, 180, 254, ';
+        break;
+    }
+  }
+
+  update() {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    ctx.clearRect(0, 0, this.width, this.height);
+
+    for (let i = 0; i < this.particles.length; i++) {
+      const p = this.particles[i];
+      p.y -= p.speedY;
+      p.wobble += p.wobbleSpeed;
+      p.x += Math.sin(p.wobble) * 0.9;
+
+      if (p.y < -30) {
+        this.resetParticle(p);
+      }
+
+      ctx.save();
+      ctx.fillStyle = p.color + p.opacity + ')';
+
+      if (p.type === 'bubble') {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(255, 255, 255, ' + (p.opacity * 0.6) + ')';
+        ctx.beginPath();
+        ctx.arc(p.x - p.size * 0.3, p.y - p.size * 0.3, p.size * 0.28, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (p.type === 'heart') {
+        this.drawHeart(ctx, p.x, p.y, p.size);
+      } else if (p.type === 'sparkle') {
+        this.drawSparkle(ctx, p.x, p.y, p.size);
+      } else if (p.type === 'ember') {
+        ctx.shadowColor = p.color + '0.8)';
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (p.type === 'electric') {
+        ctx.shadowColor = '#60a5fa';
+        ctx.shadowBlur = 6;
+        ctx.fillRect(p.x, p.y, p.size * 0.7, p.size * 2.2);
+      } else if (p.type === 'confetti') {
+        p.rot = (p.rot || 0) + (p.rotSpeed || 0.02);
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 1.4);
+      }
+
+      ctx.restore();
+    }
+  }
+
+  drawSparkle(ctx, cx, cy, size) {
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - size);
+    ctx.quadraticCurveTo(cx, cy, cx + size, cy);
+    ctx.quadraticCurveTo(cx, cy, cx, cy + size);
+    ctx.quadraticCurveTo(cx, cy, cx - size, cy);
+    ctx.quadraticCurveTo(cx, cy, cx, cy - size);
+    ctx.fill();
+  }
+
+  drawHeart(ctx, x, y, size) {
+    ctx.beginPath();
+    const topCurveHeight = size * 0.3;
+    ctx.moveTo(x, y + topCurveHeight);
+    ctx.bezierCurveTo(x, y, x - size / 2, y, x - size / 2, y + topCurveHeight);
+    ctx.bezierCurveTo(x - size / 2, y + (size + topCurveHeight) / 2, x, y + (size + topCurveHeight) / 1.4, x, y + size);
+    ctx.bezierCurveTo(x, y + (size + topCurveHeight) / 1.4, x + size / 2, y + (size + topCurveHeight) / 2, x + size / 2, y + topCurveHeight);
+    ctx.bezierCurveTo(x + size / 2, y, x, y, x, y + topCurveHeight);
+    ctx.fill();
+  }
+
+  start() {
+    if (this.isRunning || this.prefersReducedMotion) return;
+    this.isRunning = true;
+    const loop = () => {
+      if (!this.isRunning) return;
+      this.update();
+      this.animId = requestAnimationFrame(loop);
+    };
+    this.animId = requestAnimationFrame(loop);
+  }
+
+  stop() {
+    this.isRunning = false;
+    if (this.animId) cancelAnimationFrame(this.animId);
+  }
+}
+
+class CelebrationFXEngine {
+  constructor(canvasId) {
+    this.canvas = document.getElementById(canvasId);
+    if (!this.canvas) return;
+    this.ctx = this.canvas.getContext('2d');
+    this.particles = [];
+    this.animId = null;
+    this.isRunning = false;
+    this.resize();
+    window.addEventListener('resize', () => this.resize());
+  }
+
+  resize() {
+    if (!this.canvas) return;
+    const parent = this.canvas.parentElement || document.getElementById('app-container');
+    if (!parent) return;
+    const rect = parent.getBoundingClientRect ? parent.getBoundingClientRect() : { width: 480, height: 800 };
+    this.canvas.width = rect.width || 480;
+    this.canvas.height = rect.height || 800;
+  }
+
+  burst(x, y, colors, count = 35) {
+    this.resize();
+    const defaultColors = ['#f43f5e', '#ec4899', '#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ffd24c'];
+    const palette = colors || defaultColors;
+
+    for (let i = 0; i < count; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 3.5 + Math.random() * 7.5;
+      this.particles.push({
+        x: x || this.canvas.width / 2,
+        y: y || this.canvas.height / 2,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 2.5,
+        size: 5 + Math.random() * 6,
+        color: palette[Math.floor(Math.random() * palette.length)],
+        rotation: Math.random() * Math.PI * 2,
+        rotSpeed: (Math.random() - 0.5) * 0.25,
+        alpha: 1,
+        decay: 0.015 + Math.random() * 0.015,
+        gravity: 0.18
+      });
+    }
+
+    if (!this.isRunning) {
+      this.start();
+    }
+  }
+
+  victoryCelebration() {
+    this.resize();
+    const w = this.canvas.width;
+    const h = this.canvas.height;
+    this.burst(w * 0.2, h * 0.7, null, 45);
+    this.burst(w * 0.8, h * 0.7, null, 45);
+    setTimeout(() => {
+      this.burst(w * 0.5, h * 0.4, null, 60);
+    }, 350);
+  }
+
+  start() {
+    this.isRunning = true;
+    const loop = () => {
+      if (this.particles.length === 0) {
+        this.isRunning = false;
+        if (this.ctx) this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        return;
+      }
+      this.update();
+      this.animId = requestAnimationFrame(loop);
+    };
+    this.animId = requestAnimationFrame(loop);
+  }
+
+  update() {
+    const ctx = this.ctx;
+    ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+    for (let i = this.particles.length - 1; i >= 0; i--) {
+      const p = this.particles[i];
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += p.gravity;
+      p.vx *= 0.98;
+      p.rotation += p.rotSpeed;
+      p.alpha -= p.decay;
+
+      if (p.alpha <= 0) {
+        this.particles.splice(i, 1);
+        continue;
+      }
+
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, p.alpha);
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rotation);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 1.5);
+      ctx.restore();
+    }
+  }
+}
+
+let ambientFX = null;
+let celebrationFX = null;
+
 const sound = new SoundEngine();
 
 // ==========================================================================
 // INICIALIZACIÓN
 // ==========================================================================
 document.addEventListener('DOMContentLoaded', () => {
+  ambientFX = new AmbientFXEngine('ambient-canvas');
+  celebrationFX = new CelebrationFXEngine('celebration-canvas');
   setReferenceScale();
   loadCardsDatabase();
   setupEventListeners();
@@ -527,6 +848,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (!restored) {
     renderPlayersScreen();
   }
+  initPwaManager();
 });
 
 function setReferenceScale() {
@@ -550,6 +872,9 @@ function setupEventListeners() {
   if (resumeBtn) {
     resumeBtn.addEventListener('click', () => {
       sound.playFanfare();
+      if (celebrationFX) {
+        celebrationFX.burst(null, null, ['#8b5cf6', '#ec4899', '#38bdf8', '#ffd24c'], 24);
+      }
       startBoardGame(true);
     });
   }
@@ -717,6 +1042,9 @@ function setupEventListeners() {
       renderPlayersScreen();
       saveGameState();
       sound.playStep();
+      if (celebrationFX) {
+        celebrationFX.burst(null, null, [color, '#ffffff', '#ffd24c'], 14);
+      }
     };
 
     if (confirmBtn) confirmBtn.addEventListener('click', confirmAdd);
@@ -771,11 +1099,19 @@ function showScreen(screenId) {
   const appContainer = document.getElementById('app-container');
   if (screenId === 'screen-board-game') {
     appContainer.classList.add('in-game-board');
+    if (typeof hidePwaInviteBanner === 'function') hidePwaInviteBanner(false);
   } else {
     appContainer.classList.remove('in-game-board');
   }
 
   STATE.activeScreen = screenId;
+  if (ambientFX) {
+    if (screenId === 'screen-board-game') {
+      ambientFX.setMode(STATE.selectedGameKey || 'classic');
+    } else {
+      ambientFX.setMode(screenId);
+    }
+  }
   updateResumeButtonVisibility();
   saveGameState();
 }
@@ -793,6 +1129,9 @@ function openGamePreview(gameKey) {
   modal.classList.add('open');
   modal.setAttribute('aria-hidden', 'false');
   sound.playFanfare();
+  if (ambientFX) {
+    ambientFX.setMode(gameKey);
+  }
 }
 
 function closeModePreview() {
@@ -973,7 +1312,6 @@ function renderSpiralBoard() {
   if (!frame) return;
   frame.innerHTML = '';
 
-  const activePlayer = STATE.players[STATE.currentTurnIndex];
   const boardConfig = getBoardConfig(STATE.selectedGameKey);
   frame.dataset.game = STATE.selectedGameKey;
 
@@ -982,11 +1320,11 @@ function renderSpiralBoard() {
   startCell.className = 'spiral-cell tile-start';
   startCell.style.gridColumn = boardConfig.startCol;
   startCell.style.gridRow = boardConfig.startRow;
-  if (activePlayer && activePlayer.position === 0) {
-    startCell.classList.add('start-reference');
-  } else {
-    startCell.classList.add('start-cleared');
-    startCell.innerHTML = '<span class="start-text-label">START</span>';
+
+  // Renderizar a todos los jugadores que estén en la casilla de salida (0)
+  const playersAtStart = STATE.players.filter(p => p.position === 0);
+  if (playersAtStart.length > 0) {
+    startCell.appendChild(createPucksWrapper(playersAtStart));
   }
   frame.appendChild(startCell);
 
@@ -1001,9 +1339,10 @@ function renderSpiralBoard() {
 
     cell.innerHTML = `<span class="cell-num">${c.num}</span>`;
 
-    // Dibujar ficha del jugador en esta casilla
-    if (activePlayer && activePlayer.position === c.num) {
-      cell.appendChild(createPlayerPuck(activePlayer));
+    // Dibujar a TODOS los jugadores que estén en esta casilla
+    const playersHere = STATE.players.filter(p => p.position === c.num);
+    if (playersHere.length > 0) {
+      cell.appendChild(createPucksWrapper(playersHere));
     }
 
     frame.appendChild(cell);
@@ -1015,24 +1354,34 @@ function renderSpiralBoard() {
   endCell.id = 'cell-end';
   endCell.style.gridColumn = boardConfig.endCol;
   endCell.style.gridRow = boardConfig.endRow;
-  endCell.innerHTML = '<span class="end-text-label">END</span>';
 
   // Si alguien llegó a la meta
-  if (activePlayer && activePlayer.position >= boardConfig.maxTile) {
-    endCell.appendChild(createPlayerPuck(activePlayer));
+  const playersAtEnd = STATE.players.filter(p => p.position >= boardConfig.maxTile);
+  if (playersAtEnd.length > 0) {
+    endCell.appendChild(createPucksWrapper(playersAtEnd));
   }
 
   frame.appendChild(endCell);
 }
 
-function createPlayerPuck(player) {
-  const puck = document.createElement('div');
-  puck.className = 'cell-puck';
-  puck.style.borderColor = player.ringColor;
-  puck.textContent = PLAYER_AVATARS.find(item => item.id === player.avatar)?.emoji || '😊';
-  if (player.avatar && player.avatar !== 'smile') puck.classList.add('avatar-emoji');
-  puck.title = player.name;
-  return puck;
+function createPucksWrapper(players) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'cell-pucks-wrapper';
+  const sizeClass = players.length === 1 ? 'puck-size-1' : players.length === 2 ? 'puck-size-2' : 'puck-size-multi';
+
+  players.forEach(p => {
+    const isCurrent = STATE.players[STATE.currentTurnIndex]?.id === p.id;
+    const isHopping = isCurrent && STATE.isMoving;
+    const puck = document.createElement('div');
+    puck.className = `cell-puck ${sizeClass}${isCurrent ? ' puck-active-turn' : ''}${isHopping ? ' puck-hopping' : ''}`;
+    puck.style.borderColor = p.ringColor;
+    const avatarObj = PLAYER_AVATARS.find(item => item.id === p.avatar) || PLAYER_AVATARS[0];
+    puck.textContent = avatarObj.emoji;
+    puck.title = `${p.name} (Casilla ${p.position})`;
+    wrapper.appendChild(puck);
+  });
+
+  return wrapper;
 }
 
 // ==========================================================================
@@ -1044,18 +1393,56 @@ function rollOfficialDie() {
   sound.playDice();
 
   const die = document.getElementById('official-die');
-  if (die) die.classList.add('die-rolling');
+  if (die) {
+    die.classList.remove('die-landing');
+    die.classList.add('die-rolling');
+  }
+
+  // Animación dinámica de caras parpadeando durante el rodamiento 3D
+  let flickerCount = 0;
+  const flickerInterval = setInterval(() => {
+    flickerCount++;
+    const randomFace = Math.floor(Math.random() * 6) + 1;
+    setDieFace(randomFace);
+    if (flickerCount >= 8) {
+      clearInterval(flickerInterval);
+    }
+  }, 70);
 
   setTimeout(() => {
+    clearInterval(flickerInterval);
     const roll = Math.floor(Math.random() * 6) + 1;
     if (die) {
       die.classList.remove('die-rolling');
       setDieFace(roll);
+      die.classList.add('die-landing');
+      setTimeout(() => die.classList.remove('die-landing'), 380);
+
+      // Destellos efervescentes al impactar el dado
+      if (celebrationFX) {
+        const rect = die.getBoundingClientRect();
+        const appRect = document.getElementById('app-container')?.getBoundingClientRect();
+        const x = appRect ? (rect.left - appRect.left + rect.width / 2) : rect.left + rect.width / 2;
+        const y = appRect ? (rect.top - appRect.top + rect.height / 2) : rect.top + rect.height / 2;
+        const boardCfg = getBoardConfig(STATE.selectedGameKey);
+        celebrationFX.burst(x, y, [boardCfg.dieBorder, '#ffd24c', '#ffffff'], 18);
+      }
     }
     STATE.isRolling = false;
-    movePlayerSpiral(roll);
+    setTimeout(() => {
+      movePlayerSpiral(roll);
+    }, 180);
   }, 650);
 }
+
+const DIE_PIP_POSITIONS = {
+  1: ['pip-center'],
+  2: ['pip-top-right', 'pip-bottom-left'],
+  3: ['pip-top-left', 'pip-center', 'pip-bottom-right'],
+  4: ['pip-top-left', 'pip-top-right', 'pip-bottom-left', 'pip-bottom-right'],
+  5: ['pip-top-left', 'pip-top-right', 'pip-center', 'pip-bottom-left', 'pip-bottom-right'],
+  6: ['pip-top-left', 'pip-mid-left', 'pip-bottom-left', 'pip-top-right', 'pip-mid-right', 'pip-bottom-right']
+};
 
 function setDieFace(num) {
   const die = document.getElementById('official-die');
@@ -1065,11 +1452,8 @@ function setDieFace(num) {
   die.style.borderColor = boardConfig.dieBorder;
   die.style.boxShadow = `0 8px 24px ${boardConfig.dieShadow}`;
 
-  let pips = '';
-  for (let i = 0; i < num; i++) {
-    pips += '<div class="die-pip"></div>';
-  }
-  die.innerHTML = pips;
+  const pips = DIE_PIP_POSITIONS[num] || DIE_PIP_POSITIONS[1];
+  die.innerHTML = pips.map(pos => `<div class="die-pip ${pos}"></div>`).join('');
 }
 
 // Movimiento por la espiral casilla por casilla
@@ -1098,12 +1482,16 @@ function movePlayerSpiral(steps) {
 }
 
 let currentCardState = 'NONE'; // 'NONE' | 'WAITING_FLIP' | 'SHOWING'
+let lastCardFlipTimestamp = 0;
 
 // Abre la carta de reto correspondiente a la casilla
 function triggerTileCard(player) {
   const boardConfig = getBoardConfig(STATE.selectedGameKey);
   if (player.position >= boardConfig.maxTile) {
     sound.playFanfare();
+    if (celebrationFX) {
+      celebrationFX.victoryCelebration();
+    }
     showCardChallenge({
       type: 'event',
       category: '🏆 ¡CAMPEÓN!',
@@ -1191,6 +1579,7 @@ function showCardChallenge(card) {
 
   // Estado inicial: WAITING_FLIP (Mostrando el anverso de la categoría)
   currentCardState = 'WAITING_FLIP';
+  lastCardFlipTimestamp = 0;
   if (wrapper) wrapper.classList.remove('flipped');
   if (actionsWrapper) actionsWrapper.classList.remove('visible');
 
@@ -1205,8 +1594,20 @@ function onCardWrapperClick() {
     if (wrapper) wrapper.classList.add('flipped');
     if (actionsWrapper) actionsWrapper.classList.add('visible');
     sound.playFlip();
+    if (celebrationFX) {
+      const modal = document.getElementById('modal-card-challenge');
+      const rect = modal?.getBoundingClientRect();
+      const x = rect ? rect.width / 2 : 240;
+      const y = rect ? rect.height * 0.45 : 350;
+      celebrationFX.burst(x, y, ['#f43f5e', '#a855f7', '#38bdf8', '#fbbf24', '#ffffff'], 24);
+    }
     currentCardState = 'SHOWING';
+    lastCardFlipTimestamp = Date.now();
   } else if (currentCardState === 'SHOWING') {
+    // Cooldown para evitar que toques rápidos o doble-toque en móvil descarten la carta sin leerla
+    if (Date.now() - lastCardFlipTimestamp < 450) {
+      return;
+    }
     // Al tocar la carta de nuevo se descarta y avanza turno automáticamente como en la app oficial
     handleCardAction(true);
   }
@@ -1227,9 +1628,15 @@ function handleCardAction(isDone) {
     if (isDone) {
       p.completed++;
       sound.playFanfare();
+      if (celebrationFX) {
+        celebrationFX.burst(null, null, ['#10b981', '#34d399', '#6ee7b7', '#ffd24c'], 28);
+      }
     } else {
       p.drinks++;
       sound.playDrink();
+      if (celebrationFX) {
+        celebrationFX.burst(null, null, ['#f59e0b', '#fbbf24', '#fcd34d', '#f97316'], 20);
+      }
     }
   }
 
@@ -1249,3 +1656,312 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 }
+
+// ==========================================================================
+// PWA MANAGER: INSTALACIÓN, SERVICE WORKER, BANNER Y COMPATIBILIDAD
+// ==========================================================================
+
+const PWA_STORAGE_DISMISSED_KEY = 'guatoca_pwa_invite_dismissed';
+const PWA_DISMISS_COOLDOWN_MS = 3 * 24 * 60 * 60 * 1000; // 3 días de cortesía
+
+function isRunningStandalone() {
+  return (
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.matchMedia('(display-mode: window-controls-overlay)').matches ||
+    window.matchMedia('(display-mode: minimal-ui)').matches ||
+    navigator.standalone === true ||
+    document.referrer.includes('android-app://')
+  );
+}
+
+function initPwaManager() {
+  // 1. Detección de modo instalado / standalone
+  if (isRunningStandalone()) {
+    STATE.isAppInstalled = true;
+    document.body.classList.add('is-standalone');
+    updateInstallButtonState('installed');
+  }
+
+  // 2. Registro seguro del Service Worker
+  registerServiceWorker();
+
+  // 3. Captura del evento de instalación nativa (Chromium / Android)
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    STATE.deferredInstallPrompt = e;
+    updateInstallButtonState('available');
+    console.log('[PWA] Evento beforeinstallprompt capturado y listo para instalar');
+  });
+
+  // 4. Notificación cuando la instalación concluye con éxito
+  window.addEventListener('appinstalled', () => {
+    STATE.deferredInstallPrompt = null;
+    STATE.isAppInstalled = true;
+    document.body.classList.add('is-standalone');
+    updateInstallButtonState('installed');
+    hidePwaInviteBanner(true);
+    showToast('¡Guatoca se ha instalado correctamente! 🎉');
+    console.log('[PWA] Guatoca instalada');
+  });
+
+  // 5. Configurar los botones de instalación en la interfaz
+  setupInstallButtons();
+
+  // 6. Configurar modales y eventos de la PWA
+  setupPwaModals();
+
+  // 7. Programar aviso de invitación suave al entrar
+  schedulePwaInvite();
+}
+
+function registerServiceWorker() {
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then((registration) => {
+          console.log('[PWA] Service Worker activo con alcance:', registration.scope);
+          // Detección de actualización disponible
+          registration.addEventListener('updatefound', () => {
+            const newWorker = registration.installing;
+            if (newWorker) {
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  console.log('[PWA] Nueva versión de Guatoca lista para actualizar');
+                }
+              });
+            }
+          });
+        })
+        .catch((err) => {
+          console.warn('[PWA] Registro de Service Worker omitido o no compatible en este entorno:', err);
+        });
+    });
+  }
+}
+
+function setupInstallButtons() {
+  const headerBtn = document.getElementById('btn-pwa-install-header');
+  const chooseBtn = document.getElementById('btn-pwa-install-header-choose');
+
+  const onInstallClick = (e) => {
+    e.preventDefault();
+    sound.playStep();
+    triggerPwaInstall();
+  };
+
+  if (headerBtn) headerBtn.addEventListener('click', onInstallClick);
+  if (chooseBtn) chooseBtn.addEventListener('click', onInstallClick);
+}
+
+function updateInstallButtonState(state) {
+  STATE.installButtonState = state;
+  const buttons = [
+    document.getElementById('btn-pwa-install-header'),
+    document.getElementById('btn-pwa-install-header-choose')
+  ].filter(Boolean);
+
+  buttons.forEach((btn) => {
+    if (state === 'installed') {
+      btn.style.display = 'none';
+    } else if (state === 'available') {
+      btn.style.display = 'inline-flex';
+      btn.title = 'Instalar Guatoca directamente en tu dispositivo';
+      const text = btn.querySelector('.pwa-install-text');
+      if (text) text.textContent = 'Instalar Guatoca';
+    } else if (state === 'accepted') {
+      btn.style.opacity = '0.7';
+      const text = btn.querySelector('.pwa-install-text');
+      if (text) text.textContent = 'Instalando...';
+    } else if (state === 'dismissed') {
+      btn.style.opacity = '1';
+      const text = btn.querySelector('.pwa-install-text');
+      if (text) text.textContent = 'Instalar Guatoca';
+    }
+  });
+}
+
+async function triggerPwaInstall() {
+  // Caso A: Instalación directa disponible (Android / Chrome / Edge)
+  if (STATE.deferredInstallPrompt) {
+    try {
+      const promptEvent = STATE.deferredInstallPrompt;
+      STATE.deferredInstallPrompt = null;
+      await promptEvent.prompt();
+      const choice = await promptEvent.userChoice;
+      if (choice && choice.outcome === 'accepted') {
+        sound.playFanfare();
+        updateInstallButtonState('accepted');
+        showToast('¡Instalando La Guatoca! 🚀');
+      } else {
+        updateInstallButtonState('dismissed');
+      }
+    } catch (err) {
+      console.warn('[PWA] Error al invocar prompt de instalación:', err);
+      openPwaInstructionsModal();
+    }
+  } else {
+    // Caso B: No hay evento beforeinstallprompt (iOS Safari, Firefox o manual)
+    openPwaInstructionsModal();
+  }
+}
+
+function detectPlatform() {
+  const ua = navigator.userAgent || navigator.vendor || window.opera || '';
+  if (/iPhone|iPad|iPod/i.test(ua) || (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 1)) {
+    return 'ios';
+  }
+  if (/Android/i.test(ua)) {
+    return 'android';
+  }
+  return 'desktop';
+}
+
+function openPwaInstructionsModal() {
+  const modal = document.getElementById('modal-pwa-instructions');
+  if (!modal) return;
+
+  const platform = detectPlatform();
+  selectPwaTab(platform);
+
+  modal.classList.add('open');
+  modal.style.display = 'flex';
+}
+
+function closePwaInstructionsModal() {
+  const modal = document.getElementById('modal-pwa-instructions');
+  if (modal) {
+    modal.classList.remove('open');
+    modal.style.display = 'none';
+  }
+}
+
+function selectPwaTab(platform) {
+  const tabs = document.querySelectorAll('.pwa-tab-btn');
+  const panels = {
+    ios: document.getElementById('pwa-panel-ios'),
+    android: document.getElementById('pwa-panel-android'),
+    desktop: document.getElementById('pwa-panel-desktop')
+  };
+
+  tabs.forEach((tab) => {
+    const isTarget = tab.dataset.platform === platform;
+    tab.classList.toggle('active', isTarget);
+    tab.setAttribute('aria-selected', String(isTarget));
+  });
+
+  Object.entries(panels).forEach(([key, panel]) => {
+    if (!panel) return;
+    if (key === platform) {
+      panel.classList.add('active');
+      panel.style.display = 'block';
+    } else {
+      panel.classList.remove('active');
+      panel.style.display = 'none';
+    }
+  });
+}
+
+function setupPwaModals() {
+  // Modal de instrucciones
+  const modal = document.getElementById('modal-pwa-instructions');
+  const closeBtn = document.getElementById('btn-close-pwa-instructions');
+  const gotItBtn = document.getElementById('btn-pwa-instructions-gotit');
+
+  if (closeBtn) closeBtn.addEventListener('click', () => {
+    sound.playStep();
+    closePwaInstructionsModal();
+  });
+  if (gotItBtn) gotItBtn.addEventListener('click', () => {
+    sound.playStep();
+    closePwaInstructionsModal();
+  });
+  if (modal) {
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) closePwaInstructionsModal();
+    });
+  }
+
+  // Tabs de plataforma
+  document.querySelectorAll('.pwa-tab-btn').forEach((tab) => {
+    tab.addEventListener('click', () => {
+      sound.playStep();
+      selectPwaTab(tab.dataset.platform);
+    });
+  });
+
+  // Banner de Invitación
+  const installNowBtn = document.getElementById('btn-pwa-install-now');
+  const installLaterBtn = document.getElementById('btn-pwa-install-later');
+  const bannerCloseBtn = document.getElementById('btn-pwa-banner-close');
+
+  if (installNowBtn) {
+    installNowBtn.addEventListener('click', () => {
+      sound.playStep();
+      hidePwaInviteBanner(false);
+      triggerPwaInstall();
+    });
+  }
+
+  if (installLaterBtn) {
+    installLaterBtn.addEventListener('click', () => {
+      sound.playStep();
+      hidePwaInviteBanner(true);
+    });
+  }
+
+  if (bannerCloseBtn) {
+    bannerCloseBtn.addEventListener('click', () => {
+      hidePwaInviteBanner(true);
+    });
+  }
+}
+
+function schedulePwaInvite() {
+  // Mostrar la invitación suave tras un breve retraso (2.2s) para no interrumpir la carga inicial
+  setTimeout(() => {
+    // 1. Si ya está instalada o en standalone, no mostrar
+    if (isRunningStandalone() || STATE.isAppInstalled) return;
+
+    // 2. Si el usuario ya está jugando activamente en el tablero, no interrumpir
+    if (STATE.activeScreen === 'screen-board-game' || STATE.activeScreen === 'screen-mode-game') return;
+
+    // 3. Si fue pospuesto recientemente (cooldown de 3 días), respetar la decisión
+    try {
+      const dismissedTime = localStorage.getItem(PWA_STORAGE_DISMISSED_KEY);
+      if (dismissedTime && (Date.now() - parseInt(dismissedTime, 10)) < PWA_DISMISS_COOLDOWN_MS) {
+        return;
+      }
+    } catch (_) {}
+
+    showPwaInviteBanner();
+  }, 2200);
+}
+
+function showPwaInviteBanner() {
+  const banner = document.getElementById('pwa-invite-banner');
+  if (!banner) return;
+  // No mostrar si estamos en tablero de juego
+  if (STATE.activeScreen === 'screen-board-game' || STATE.activeScreen === 'screen-mode-game') return;
+
+  banner.style.display = 'block';
+  // Forzar reflow para animación CSS suave
+  void banner.offsetWidth;
+  banner.classList.add('visible');
+}
+
+function hidePwaInviteBanner(persistDismissal = true) {
+  const banner = document.getElementById('pwa-invite-banner');
+  if (!banner) return;
+
+  banner.classList.remove('visible');
+  setTimeout(() => {
+    banner.style.display = 'none';
+  }, 450);
+
+  if (persistDismissal) {
+    try {
+      localStorage.setItem(PWA_STORAGE_DISMISSED_KEY, Date.now().toString());
+    } catch (_) {}
+  }
+}
+

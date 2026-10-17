@@ -2,14 +2,14 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>La Guatoca · El Juego para Tomar</title>
   <meta name="description" content="El juego oficial de la oca para tomar con amigos en previas y rumbas. ¡Lanza el dado y cumple los retos!">
-  <meta name="theme-color" content="#22123b">
+  <meta name="theme-color" content="#300759">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="La Guatoca">
+  <meta name="apple-mobile-web-app-title" content="Guatoca">
 
   <!-- Open Graph / Redes Sociales -->
   <meta property="og:type" content="website">
@@ -18,8 +18,9 @@
   <meta property="og:image" content="icon.png">
 
   <!-- Favicon y Manifest PWA -->
-  <link rel="icon" type="image/png" href="icon.png">
-  <link rel="apple-touch-icon" href="icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="style.css">
 </head>
@@ -28,6 +29,10 @@
   <!-- Contenedor Principal con estilo de App Móvil -->
   <div id="app-container">
 
+    <!-- Capas de efectos ambientales y celebraciones dinámicas -->
+    <canvas id="ambient-canvas" class="ambient-fx-canvas" aria-hidden="true"></canvas>
+    <canvas id="celebration-canvas" class="celebration-fx-canvas" aria-hidden="true"></canvas>
+
     <!-- ==========================================================
          PANTALLA 1: ¿QUIÉN TOMA HOY? (SELECCIÓN DE JUGADORES)
          ========================================================== -->
@@ -35,6 +40,10 @@
       <!-- Cabecera Superior -->
       <div class="app-header">
         <button class="header-btn lang-btn" title="Idioma"><img src="assets/original/icon-flag-es419.png" alt=""></button>
+        <button type="button" id="btn-pwa-install-header" class="btn-pwa-install-header" title="Instalar Guatoca" aria-label="Instalar Guatoca">
+          <span class="pwa-install-icon" aria-hidden="true">📲</span>
+          <span class="pwa-install-text">Instalar Guatoca</span>
+        </button>
         <button class="header-btn settings-btn" id="btn-sound-toggle" title="Desactivar sonido" aria-pressed="true"><img src="assets/original/icon-settings.png" alt=""></button>
       </div>
 
@@ -59,7 +68,11 @@
       <!-- Cabecera Superior -->
       <div class="app-header">
         <button id="btn-back-to-lobby" class="header-btn back-btn" title="Atrás"><img src="assets/original/icon-back-arrow.png" alt=""></button>
-          <button class="header-btn settings-btn" title="Configuración" aria-label="Configuración"><img src="assets/original/icon-settings.png" alt=""></button>
+        <button type="button" id="btn-pwa-install-header-choose" class="btn-pwa-install-header" title="Instalar Guatoca" aria-label="Instalar Guatoca">
+          <span class="pwa-install-icon" aria-hidden="true">📲</span>
+          <span class="pwa-install-text">Instalar Guatoca</span>
+        </button>
+        <button class="header-btn settings-btn" title="Configuración" aria-label="Configuración"><img src="assets/original/icon-settings.png" alt=""></button>
       </div>
 
       <h1 class="screen-title">¿QUÉ VAMOS A JUGAR?</h1>
@@ -248,8 +261,108 @@
       </section>
     </div>
 
+    <!-- ==========================================================
+         PWA: BANNER DE INVITACIÓN VISUAL Y MODAL DE INSTRUCCIONES
+         ========================================================== -->
 
+    <!-- Banner emergente de invitación suave (Requisito 5) -->
+    <aside id="pwa-invite-banner" class="pwa-invite-banner" role="dialog" aria-modal="false" aria-labelledby="pwa-invite-title" style="display: none;">
+      <button type="button" class="pwa-banner-close" id="btn-pwa-banner-close" aria-label="Cerrar invitación">×</button>
+      <div class="pwa-invite-content">
+        <div class="pwa-invite-icon-wrap" aria-hidden="true">
+          <img src="icons/icon-192.png" alt="La Guatoca" class="pwa-invite-img">
+        </div>
+        <div class="pwa-invite-text">
+          <h3 id="pwa-invite-title" class="pwa-invite-title">¡Llévate Guatoca contigo! 🎲</h3>
+          <p class="pwa-invite-desc">Instala nuestra aplicación para acceder más rápido desde tu pantalla de inicio y disfrutar de una experiencia más cómoda, sin tener que buscar la página cada vez.</p>
+        </div>
+      </div>
+      <div class="pwa-invite-actions">
+        <button type="button" id="btn-pwa-install-now" class="btn-pwa-primary">
+          <span aria-hidden="true">📲</span> Instalar ahora
+        </button>
+        <button type="button" id="btn-pwa-install-later" class="btn-pwa-secondary">
+          Ahora no
+        </button>
+      </div>
+    </aside>
 
+    <!-- Modal de Instrucciones Manuales por Plataforma (Requisito 6) -->
+    <div class="modal-overlay pwa-modal-overlay" id="modal-pwa-instructions" role="dialog" aria-modal="true" aria-labelledby="pwa-modal-title" style="display: none;">
+      <div class="modal-sheet pwa-instructions-sheet">
+        <button type="button" class="pwa-modal-close" id="btn-close-pwa-instructions" aria-label="Cerrar">×</button>
+        <div class="pwa-instructions-header">
+          <img src="icons/icon-192.png" alt="" class="pwa-modal-icon" aria-hidden="true">
+          <h2 id="pwa-modal-title" class="pwa-modal-title">Instalar La Guatoca</h2>
+          <p class="pwa-modal-subtitle">Juega a pantalla completa y sin barras de navegador</p>
+        </div>
+
+        <!-- Selector de plataforma -->
+        <div class="pwa-tabs-row" role="tablist" aria-label="Plataforma de instalación">
+          <button type="button" class="pwa-tab-btn active" id="pwa-tab-ios" role="tab" aria-selected="true" data-platform="ios">📱 iPhone / iPad</button>
+          <button type="button" class="pwa-tab-btn" id="pwa-tab-android" role="tab" aria-selected="false" data-platform="android">🤖 Android</button>
+          <button type="button" class="pwa-tab-btn" id="pwa-tab-desktop" role="tab" aria-selected="false" data-platform="desktop">💻 Computadora</button>
+        </div>
+
+        <!-- Panel iOS -->
+        <div class="pwa-tab-panel active" id="pwa-panel-ios" role="tabpanel">
+          <ol class="pwa-steps-list">
+            <li>
+              <span class="pwa-step-num">1</span>
+              <span class="pwa-step-text">Toca el botón <strong>Compartir</strong> <span class="pwa-key-icon">⎋</span> (ícono de cuadro con flecha arriba) en la barra inferior de <strong>Safari</strong>.</span>
+            </li>
+            <li>
+              <span class="pwa-step-num">2</span>
+              <span class="pwa-step-text">Desplázate hacia abajo y elige <strong class="pwa-highlight">«Añadir a la pantalla de inicio»</strong> <span class="pwa-key-icon">➕</span>.</span>
+            </li>
+            <li>
+              <span class="pwa-step-num">3</span>
+              <span class="pwa-step-text">Pulsa <strong>«Añadir»</strong> arriba a la derecha. ¡Guatoca aparecerá como un ícono en tu pantalla de inicio!</span>
+            </li>
+          </ol>
+        </div>
+
+        <!-- Panel Android -->
+        <div class="pwa-tab-panel" id="pwa-panel-android" role="tabpanel" style="display: none;">
+          <ol class="pwa-steps-list">
+            <li>
+              <span class="pwa-step-num">1</span>
+              <span class="pwa-step-text">Toca el menú de tres puntos <span class="pwa-key-icon">⋮</span> en la esquina superior derecha del navegador (Chrome o Samsung Internet).</span>
+            </li>
+            <li>
+              <span class="pwa-step-num">2</span>
+              <span class="pwa-step-text">Selecciona <strong class="pwa-highlight">«Instalar aplicación»</strong> o <strong>«Añadir a la pantalla principal»</strong>.</span>
+            </li>
+            <li>
+              <span class="pwa-step-num">3</span>
+              <span class="pwa-step-text">Confirma pulsando <strong>«Instalar»</strong>. ¡Listo para jugar!</span>
+            </li>
+          </ol>
+        </div>
+
+        <!-- Panel Desktop -->
+        <div class="pwa-tab-panel" id="pwa-panel-desktop" role="tabpanel" style="display: none;">
+          <ol class="pwa-steps-list">
+            <li>
+              <span class="pwa-step-num">1</span>
+              <span class="pwa-step-text">En la barra de direcciones de tu navegador (Chrome o Edge), busca el ícono de instalación <span class="pwa-key-icon">📥</span> o <span class="pwa-key-icon">⊕</span> a la derecha.</span>
+            </li>
+            <li>
+              <span class="pwa-step-num">2</span>
+              <span class="pwa-step-text">Haz clic sobre él y selecciona <strong class="pwa-highlight">«Instalar»</strong>.</span>
+            </li>
+            <li>
+              <span class="pwa-step-num">3</span>
+              <span class="pwa-step-text">También puedes ir al menú <span class="pwa-key-icon">⋮</span> ➔ <strong>«Transmitir, guardar y compartir»</strong> ➔ <strong>«Instalar La Guatoca...»</strong>.</span>
+            </li>
+          </ol>
+        </div>
+
+        <div class="pwa-instructions-footer">
+          <button type="button" id="btn-pwa-instructions-gotit" class="btn-pwa-primary btn-pwa-block">¡Entendido!</button>
+        </div>
+      </div>
+    </div>
 
   </div>
 

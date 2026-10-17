@@ -45,5 +45,12 @@ Si quieres tener un repositorio separado (por ejemplo llamado `guatoca-game` o `
 - **Rutas Relativas (`./`)**: Todos los enlaces a CSS, JavaScript, imágenes y fuentes utilizan rutas relativas, por lo que la web funciona tanto en la raíz de un dominio como en subdirectorios de GitHub Pages (`usuario.github.io/nombre-repo/`).
 - **`.nojekyll`**: Evita que el procesador Jekyll de GitHub Pages ignore carpetas o modifique rutas.
 - **`404.html`**: Redirección automática al juego en caso de acceder a una subruta no existente.
-- **`manifest.webmanifest` y Meta Tags PWA**: Permite instalar el juego en la pantalla de inicio de teléfonos móviles (Android e iOS) a pantalla completa con icono oficial y color de tema `#22123b`.
+- **Progressive Web App (PWA) Completa**:
+  - `manifest.webmanifest` & `manifest.json`: Configurados con `name: "La Guatoca"`, `short_name: "Guatoca"`, `display: "standalone"`, `orientation: "portrait"` y paleta oficial (`#300759` y `#22123b`).
+  - `sw.js` (Service Worker): Pre-cachea 43 recursos críticos permitiendo jugar 100% offline tras la primera carga, con estrategia Stale-While-Revalidate para actualizaciones y Network-First para HTML.
+  - Iconos de alta resolución generados desde el recurso original: 192x192, 512x512, adaptativos maskables para Android, Apple Touch Icon (180x180) y favicon (32x32).
+  - Botón visible «Instalar Guatoca» con animación sutil y detección automática de soporte del navegador.
+  - Aviso de invitación visual al entrar («¡Llévate Guatoca contigo! 🎲») con retardo no intrusivo y política de posposición en `localStorage`.
+  - Modal interactivo con guía paso a paso para iOS Safari, Android y Escritorio.
+  - Detección de modo `standalone` con soporte de márgenes seguros (`safe-area-inset`) para iPhone.
 - **Open Graph y SEO**: Título, descripción e imagen preparados para mostrar previsualizaciones enriquecidas al compartir el enlace por WhatsApp, Telegram, Discord, etc.
