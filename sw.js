@@ -3,7 +3,7 @@
 // Estrategia de caché segura, arranque sin conexión y actualización controlada
 // ==========================================================================
 
-const CACHE_NAME = 'guatoca-v1.0.0';
+const CACHE_NAME = 'guatoca-v1.1.0-responsive';
 
 // Recursos críticos y assets esenciales para juego completo offline
 const PRECACHE_ASSETS = [
@@ -54,6 +54,7 @@ const PRECACHE_ASSETS = [
 
 // 1. INSTALACIÓN: Pre-cachear el App Shell y recursos esenciales
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       // Usamos cache.addAll con tolerancia a fallos individuales
