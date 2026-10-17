@@ -2163,8 +2163,18 @@ body {
   background: #f2e6ee url("assets/original/background-xxl.png") center / 100% 100% no-repeat;
 }
 
+.spiral-board-frame[data-game="flash"] {
+  grid-template-columns: repeat(6, 1fr) !important;
+  grid-template-rows: repeat(7, 1fr) !important;
+}
+
 .spiral-board-frame[data-game="flash"]::before {
   background-image: url("assets/original/board-flash.png");
+}
+
+.spiral-board-frame[data-game="xxl"] {
+  grid-template-columns: repeat(9, 1fr) !important;
+  grid-template-rows: repeat(10, 1fr) !important;
 }
 
 .spiral-board-frame[data-game="xxl"]::before {

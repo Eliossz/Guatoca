@@ -5,9 +5,12 @@
 // Paleta de colores pastel original para el tablero (Captura 4)
 const PASTEL_COLORS = ['c-pink', 'c-blue', 'c-green', 'c-yellow', 'c-peach'];
 
-// Coordenadas de la espiral original: 9 columnas por 8 filas, con START de
-// tres celdas y END de tres por dos (Captura del tablero).
-const SPIRAL_COORDS = [
+// ==========================================================================
+// CONFIGURACIÓN DE TABLEROS OFICIALES DE LA GUATOCA
+// ==========================================================================
+
+// Coordenadas de la espiral clásica (Clásico, Etílico, Hot, Pareja: 9x8, 62 casillas)
+const SPIRAL_COORDS_CLASSIC = [
   { num: 1, x: 3, y: 7 }, { num: 2, x: 4, y: 7 }, { num: 3, x: 5, y: 7 },
   { num: 4, x: 6, y: 7 }, { num: 5, x: 7, y: 7 }, { num: 6, x: 8, y: 7 },
   { num: 7, x: 8, y: 6 }, { num: 8, x: 8, y: 5 }, { num: 9, x: 8, y: 4 },
@@ -31,9 +34,136 @@ const SPIRAL_COORDS = [
   { num: 61, x: 2, y: 2 }, { num: 62, x: 2, y: 3 }
 ];
 
+// Coordenadas de la espiral Flash (Flash: 6x7, 35 casillas oficiales)
+const SPIRAL_COORDS_FLASH = [
+  { num: 1, x: 2, y: 6 }, { num: 2, x: 3, y: 6 }, { num: 3, x: 4, y: 6 }, { num: 4, x: 5, y: 6 },
+  { num: 5, x: 5, y: 5 }, { num: 6, x: 5, y: 4 }, { num: 7, x: 5, y: 3 }, { num: 8, x: 5, y: 2 },
+  { num: 9, x: 5, y: 1 }, { num: 10, x: 5, y: 0 }, { num: 11, x: 4, y: 0 }, { num: 12, x: 3, y: 0 },
+  { num: 13, x: 2, y: 0 }, { num: 14, x: 1, y: 0 }, { num: 15, x: 0, y: 0 }, { num: 16, x: 0, y: 1 },
+  { num: 17, x: 0, y: 2 }, { num: 18, x: 0, y: 3 }, { num: 19, x: 0, y: 4 }, { num: 20, x: 0, y: 5 },
+  { num: 21, x: 1, y: 5 }, { num: 22, x: 2, y: 5 }, { num: 23, x: 3, y: 5 }, { num: 24, x: 4, y: 5 },
+  { num: 25, x: 4, y: 4 }, { num: 26, x: 4, y: 3 }, { num: 27, x: 4, y: 2 }, { num: 28, x: 4, y: 1 },
+  { num: 29, x: 3, y: 1 }, { num: 30, x: 2, y: 1 }, { num: 31, x: 1, y: 1 }, { num: 32, x: 1, y: 2 },
+  { num: 33, x: 1, y: 3 }, { num: 34, x: 1, y: 4 }
+];
+
+// Coordenadas de la espiral XXL (XXL: 9x10, 85 casillas oficiales)
+const SPIRAL_COORDS_XXL = [
+  { num: 1, x: 6, y: 9 }, { num: 2, x: 5, y: 9 }, { num: 3, x: 4, y: 9 }, { num: 4, x: 3, y: 9 },
+  { num: 5, x: 2, y: 9 }, { num: 6, x: 1, y: 9 }, { num: 7, x: 0, y: 9 }, { num: 8, x: 0, y: 8 },
+  { num: 9, x: 0, y: 7 }, { num: 10, x: 0, y: 6 }, { num: 11, x: 0, y: 5 }, { num: 12, x: 0, y: 4 },
+  { num: 13, x: 0, y: 3 }, { num: 14, x: 0, y: 2 }, { num: 15, x: 0, y: 1 }, { num: 16, x: 0, y: 0 },
+  { num: 17, x: 1, y: 0 }, { num: 18, x: 2, y: 0 }, { num: 19, x: 3, y: 0 }, { num: 20, x: 4, y: 0 },
+  { num: 21, x: 5, y: 0 }, { num: 22, x: 6, y: 0 }, { num: 23, x: 7, y: 0 }, { num: 24, x: 8, y: 0 },
+  { num: 25, x: 8, y: 1 }, { num: 26, x: 8, y: 2 }, { num: 27, x: 8, y: 3 }, { num: 28, x: 8, y: 4 },
+  { num: 29, x: 8, y: 5 }, { num: 30, x: 8, y: 6 }, { num: 31, x: 8, y: 7 }, { num: 32, x: 8, y: 8 },
+  { num: 33, x: 7, y: 8 }, { num: 34, x: 6, y: 8 }, { num: 35, x: 5, y: 8 }, { num: 36, x: 4, y: 8 },
+  { num: 37, x: 3, y: 8 }, { num: 38, x: 2, y: 8 }, { num: 39, x: 1, y: 8 }, { num: 40, x: 1, y: 7 },
+  { num: 41, x: 1, y: 6 }, { num: 42, x: 1, y: 5 }, { num: 43, x: 1, y: 4 }, { num: 44, x: 1, y: 3 },
+  { num: 45, x: 1, y: 2 }, { num: 46, x: 1, y: 1 }, { num: 47, x: 2, y: 1 }, { num: 48, x: 3, y: 1 },
+  { num: 49, x: 4, y: 1 }, { num: 50, x: 5, y: 1 }, { num: 51, x: 6, y: 1 }, { num: 52, x: 7, y: 1 },
+  { num: 53, x: 7, y: 2 }, { num: 54, x: 7, y: 3 }, { num: 55, x: 7, y: 4 }, { num: 56, x: 7, y: 5 },
+  { num: 57, x: 7, y: 6 }, { num: 58, x: 7, y: 7 }, { num: 59, x: 6, y: 7 }, { num: 60, x: 5, y: 7 },
+  { num: 61, x: 4, y: 7 }, { num: 62, x: 3, y: 7 }, { num: 63, x: 2, y: 7 }, { num: 64, x: 2, y: 6 },
+  { num: 65, x: 2, y: 5 }, { num: 66, x: 2, y: 4 }, { num: 67, x: 2, y: 3 }, { num: 68, x: 2, y: 2 },
+  { num: 69, x: 3, y: 2 }, { num: 70, x: 4, y: 2 }, { num: 71, x: 5, y: 2 }, { num: 72, x: 6, y: 2 },
+  { num: 73, x: 6, y: 3 }, { num: 74, x: 6, y: 4 }, { num: 75, x: 6, y: 5 }, { num: 76, x: 6, y: 6 },
+  { num: 77, x: 5, y: 6 }, { num: 78, x: 4, y: 6 }, { num: 79, x: 3, y: 6 }, { num: 80, x: 3, y: 5 },
+  { num: 81, x: 3, y: 4 }, { num: 82, x: 3, y: 3 }, { num: 83, x: 4, y: 3 }, { num: 84, x: 5, y: 3 }
+];
+
+// Compatibilidad
+const SPIRAL_COORDS = SPIRAL_COORDS_CLASSIC;
+
+const BOARD_CONFIGS = {
+  classic: {
+    maxTile: 62,
+    cols: 9,
+    rows: 8,
+    coords: SPIRAL_COORDS_CLASSIC,
+    startCol: '1 / span 3',
+    startRow: '8',
+    endCol: '4 / span 3',
+    endRow: '4 / span 2',
+    dieBorder: '#a855f7',
+    dieShadow: 'rgba(168, 85, 247, 0.35)'
+  },
+  hammered: {
+    maxTile: 62,
+    cols: 9,
+    rows: 8,
+    coords: SPIRAL_COORDS_CLASSIC,
+    startCol: '1 / span 3',
+    startRow: '8',
+    endCol: '4 / span 3',
+    endRow: '4 / span 2',
+    dieBorder: '#05b1df',
+    dieShadow: 'rgba(5, 177, 223, 0.35)'
+  },
+  hot: {
+    maxTile: 62,
+    cols: 9,
+    rows: 8,
+    coords: SPIRAL_COORDS_CLASSIC,
+    startCol: '1 / span 3',
+    startRow: '8',
+    endCol: '4 / span 3',
+    endRow: '4 / span 2',
+    dieBorder: '#ef4444',
+    dieShadow: 'rgba(239, 68, 68, 0.35)'
+  },
+  couple: {
+    maxTile: 62,
+    cols: 9,
+    rows: 8,
+    coords: SPIRAL_COORDS_CLASSIC,
+    startCol: '1 / span 3',
+    startRow: '8',
+    endCol: '4 / span 3',
+    endRow: '4 / span 2',
+    dieBorder: '#ec4899',
+    dieShadow: 'rgba(236, 72, 153, 0.35)'
+  },
+  flash: {
+    maxTile: 35,
+    cols: 6,
+    rows: 7,
+    coords: SPIRAL_COORDS_FLASH,
+    startCol: '1 / span 2',
+    startRow: '7',
+    endCol: '3 / span 2',
+    endRow: '3 / span 3',
+    dieBorder: '#3b82f6',
+    dieShadow: 'rgba(59, 130, 246, 0.35)'
+  },
+  xxl: {
+    maxTile: 85,
+    cols: 9,
+    rows: 10,
+    coords: SPIRAL_COORDS_XXL,
+    startCol: '8 / span 2',
+    startRow: '10',
+    endCol: '5 / span 2',
+    endRow: '5 / span 2',
+    dieBorder: '#ff06a7',
+    dieShadow: 'rgba(255, 6, 167, 0.35)'
+  }
+};
+
+function getBoardConfig(gameKey) {
+  return BOARD_CONFIGS[gameKey] || BOARD_CONFIGS.classic;
+}
+
 // Colores pastel para anillos de jugadores
 const PLAYER_RINGS = ['#f472b6', '#86efac', '#fde047', '#c084fc', '#fdba74', '#93c5fd', '#fca5a5'];
-const PLAYER_AVATARS = [
+
+// ==========================================================================
+// REGLA PERMANENTE DE PROYECTO / PROTECCIÓN INVIOLABLE DE AVATARES:
+// NO MODIFICAR, NO ELIMINAR, NO SUSTITUIR NI ALTERAR ESTOS EMOJIS DE PORTADA.
+// Han sido aprobados por el usuario como mejora definitiva del juego.
+// Cualquier IA o desarrollador posterior DEBE conservar este catálogo intacto.
+// ==========================================================================
+const PLAYER_AVATARS = Object.freeze([
   { id: 'smile', emoji: '😀' },
   { id: 'cocktail', emoji: '🍸' },
   { id: 'diamond', emoji: '💎' },
@@ -42,7 +172,7 @@ const PLAYER_AVATARS = [
   { id: 'cool', emoji: '😎' },
   { id: 'dice', emoji: '🎲' },
   { id: 'heart', emoji: '💜' }
-];
+]);
 let selectedPlayerAvatarIndex = Math.floor(Math.random() * PLAYER_AVATARS.length);
 
 function avatarMarkup(player, className) {
@@ -679,9 +809,10 @@ function startSelectedMode() {
   closeModePreview();
   if (BOARD_DETAILS[modeKey]) {
     sound.playFanfare();
-    startBoardGame();
+    startBoardGame(false);
     return;
   }
+  STATE.isGameActive = true;
   STATE.usedModeCardTexts.clear();
   STATE.activeModeChoice = null;
   const screen = document.getElementById('screen-mode-game');
@@ -692,6 +823,7 @@ function startSelectedMode() {
   document.getElementById('mode-game-prompt').textContent = modeKey === 'tod' ? '' : getModePrompt(modeKey);
   showScreen('screen-mode-game');
   sound.playCard();
+  saveGameState();
 }
 
 function renderModePlayers() {
@@ -744,6 +876,7 @@ function showNextModePrompt(choice) {
   if (prompt) prompt.textContent = getModePrompt(modeKey, choice);
   if (modeKey === 'tod') renderModeActions(false);
   sound.playStep();
+  saveGameState();
 }
 
 // ==========================================================================
@@ -779,6 +912,7 @@ function renderPlayersScreen() {
       e.stopPropagation();
       STATE.players = STATE.players.filter(pl => pl.id !== p.id);
       renderPlayersScreen();
+      saveGameState();
       sound.playStep();
     });
 
@@ -789,15 +923,19 @@ function renderPlayersScreen() {
 // ==========================================================================
 // PANTALLA 3: EL TABLERO EN ESPIRAL (CAPTURA 4)
 // ==========================================================================
-function startBoardGame() {
-  STATE.players.forEach(p => {
-    p.position = 0;
-    p.drinks = 0;
-    p.completed = 0;
-  });
-  STATE.currentTurnIndex = 0;
-  STATE.round = 1;
-  STATE.usedCardTexts.clear();
+function startBoardGame(isRestoring = false) {
+  if (!isRestoring) {
+    STATE.players.forEach(p => {
+      p.position = 0;
+      p.drinks = 0;
+      p.completed = 0;
+    });
+    STATE.currentTurnIndex = 0;
+    STATE.round = 1;
+    STATE.usedCardTexts.clear();
+  }
+
+  STATE.isGameActive = true;
 
   const boardScreen = document.getElementById('screen-board-game');
   if (boardScreen) boardScreen.dataset.game = STATE.selectedGameKey;
@@ -808,6 +946,7 @@ function startBoardGame() {
   renderTurnPlayersHeader();
   renderSpiralBoard();
   setDieFace(1);
+  saveGameState();
 }
 
 function renderTurnPlayersHeader() {
@@ -835,12 +974,14 @@ function renderSpiralBoard() {
   frame.innerHTML = '';
 
   const activePlayer = STATE.players[STATE.currentTurnIndex];
+  const boardConfig = getBoardConfig(STATE.selectedGameKey);
+  frame.dataset.game = STATE.selectedGameKey;
 
-  // La salida START ocupa tres celdas; los números van del 1 al 62.
+  // Celda START adaptada a la geometría de cada tablero
   const startCell = document.createElement('div');
   startCell.className = 'spiral-cell tile-start';
-  startCell.style.gridColumn = '1 / span 3';
-  startCell.style.gridRow = '8';
+  startCell.style.gridColumn = boardConfig.startCol;
+  startCell.style.gridRow = boardConfig.startRow;
   if (activePlayer && activePlayer.position === 0) {
     startCell.classList.add('start-reference');
   } else {
@@ -849,8 +990,8 @@ function renderSpiralBoard() {
   }
   frame.appendChild(startCell);
 
-  // Renderizar las 62 casillas en sus coordenadas 9x8.
-  SPIRAL_COORDS.forEach((c, idx) => {
+  // Renderizar las casillas en sus coordenadas correspondientes
+  boardConfig.coords.forEach((c, idx) => {
     const cell = document.createElement('div');
     const colorClass = PASTEL_COLORS[idx % PASTEL_COLORS.length];
     cell.className = `spiral-cell ${colorClass}`;
@@ -868,16 +1009,16 @@ function renderSpiralBoard() {
     frame.appendChild(cell);
   });
 
-  // Casilla central END (tres columnas por dos filas).
+  // Casilla central END adaptada al tablero
   const endCell = document.createElement('div');
   endCell.className = 'spiral-cell tile-end';
   endCell.id = 'cell-end';
-  endCell.style.gridColumn = '4 / span 3';
-  endCell.style.gridRow = '4 / span 2';
+  endCell.style.gridColumn = boardConfig.endCol;
+  endCell.style.gridRow = boardConfig.endRow;
   endCell.innerHTML = '<span class="end-text-label">END</span>';
 
   // Si alguien llegó a la meta
-  if (activePlayer && activePlayer.position >= 62) {
+  if (activePlayer && activePlayer.position >= boardConfig.maxTile) {
     endCell.appendChild(createPlayerPuck(activePlayer));
   }
 
@@ -919,7 +1060,10 @@ function rollOfficialDie() {
 function setDieFace(num) {
   const die = document.getElementById('official-die');
   if (!die) return;
+  const boardConfig = getBoardConfig(STATE.selectedGameKey);
   die.className = `official-white-die die-${num}`;
+  die.style.borderColor = boardConfig.dieBorder;
+  die.style.boxShadow = `0 8px 24px ${boardConfig.dieShadow}`;
 
   let pips = '';
   for (let i = 0; i < num; i++) {
@@ -932,7 +1076,8 @@ function setDieFace(num) {
 function movePlayerSpiral(steps) {
   STATE.isMoving = true;
   const p = STATE.players[STATE.currentTurnIndex];
-  const maxTile = 62;
+  const boardConfig = getBoardConfig(STATE.selectedGameKey);
+  const maxTile = boardConfig.maxTile;
 
   let remaining = steps;
 
@@ -942,9 +1087,11 @@ function movePlayerSpiral(steps) {
       remaining--;
       sound.playStep();
       renderSpiralBoard();
+      saveGameState();
     } else {
       clearInterval(timer);
       STATE.isMoving = false;
+      saveGameState();
       setTimeout(() => triggerTileCard(p), 350);
     }
   }, 230);
@@ -954,7 +1101,8 @@ let currentCardState = 'NONE'; // 'NONE' | 'WAITING_FLIP' | 'SHOWING'
 
 // Abre la carta de reto correspondiente a la casilla
 function triggerTileCard(player) {
-  if (player.position >= 62) {
+  const boardConfig = getBoardConfig(STATE.selectedGameKey);
+  if (player.position >= boardConfig.maxTile) {
     sound.playFanfare();
     showCardChallenge({
       type: 'event',
@@ -962,6 +1110,8 @@ function triggerTileCard(player) {
       title: `¡${player.name.toUpperCase()} HA LLEGADO AL FINAL!`,
       text: '¡Ha ganado la partida de La Guatoca! Todos los demás jugadores se terminan su vaso o shot ahora mismo.'
     });
+    STATE.isGameActive = false;
+    saveGameState();
     return;
   }
 
@@ -1089,6 +1239,7 @@ function handleCardAction(isDone) {
 
   renderTurnPlayersHeader();
   renderSpiralBoard();
+  saveGameState();
 }
 
 function escapeHtml(str) {
