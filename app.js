@@ -59,6 +59,8 @@ const STATE = {
   selectedGameKey: 'classic',
   isRolling: false,
   isMoving: false,
+  isGameActive: false,
+  activeScreen: 'screen-players',
   activeCard: null,
   round: 1,
   cardsByMode: {},
@@ -67,6 +69,156 @@ const STATE = {
   usedModeCardTexts: new Set(),
   activeModeChoice: null
 };
+
+// ==========================================================================
+// PERSISTENCIA EN CACHÉ / LOCALSTORAGE (SESIÓN DE PARTIDA)
+// ==========================================================================
+const STORAGE_KEY = 'guatoca_game_session_v1';
+
+function saveGameState() {
+  try {
+    const session = {
+      version: 1,
+      timestamp: Date.now(),
+      isGameActive: STATE.isGameActive || false,
+      activeScreen: STATE.activeScreen || 'screen-players',
+      selectedTab: STATE.selectedTab || 'tableros',
+      selectedGameKey: STATE.selectedGameKey || 'classic',
+      currentTurnIndex: STATE.currentTurnIndex || 0,
+      round: STATE.round || 1,
+      players: STATE.players || [],
+      usedCardTexts: Array.from(STATE.usedCardTexts || []),
+      usedModeCardTexts: Array.from(STATE.usedModeCardTexts || []),
+      activeModeChoice: STATE.activeModeChoice || null
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+  } catch (err) {
+    console.warn('No se pudo guardar la sesión en caché:', err);
+  }
+}
+
+function loadGameState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch (err) {
+    console.warn('Error al leer sesión de caché:', err);
+    return null;
+  }
+}
+
+function clearGameSession() {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch (_) {}
+}
+
+function showToast(message, duration = 3200) {
+  let toast = document.getElementById('guatoca-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'guatoca-toast';
+    toast.className = 'guatoca-toast';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = message;
+  toast.classList.add('show');
+  clearTimeout(toast._timeout);
+  toast._timeout = setTimeout(() => {
+    toast.classList.remove('show');
+  }, duration);
+}
+
+function updateResumeButtonVisibility() {
+  const banner = document.getElementById('resume-game-banner');
+  const nameEl = document.getElementById('resume-board-name');
+  const roundEl = document.getElementById('resume-round-num');
+  if (!banner) return;
+
+  if (STATE.isGameActive && STATE.players.length >= 2) {
+    banner.style.display = 'flex';
+    const title = BOARD_DETAILS[STATE.selectedGameKey]?.title || MODE_DETAILS[STATE.selectedGameKey]?.title || 'Partida';
+    if (nameEl) nameEl.textContent = title;
+    if (roundEl) roundEl.textContent = STATE.round;
+  } else {
+    banner.style.display = 'none';
+  }
+}
+
+function restoreGameState() {
+  const saved = loadGameState();
+  if (!saved) return false;
+
+  if (Array.isArray(saved.players) && saved.players.length > 0) {
+    STATE.players = saved.players;
+  }
+  if (saved.selectedTab) STATE.selectedTab = saved.selectedTab;
+  if (saved.selectedGameKey) STATE.selectedGameKey = saved.selectedGameKey;
+  if (typeof saved.currentTurnIndex === 'number') STATE.currentTurnIndex = saved.currentTurnIndex;
+  if (typeof saved.round === 'number') STATE.round = saved.round;
+  if (Array.isArray(saved.usedCardTexts)) STATE.usedCardTexts = new Set(saved.usedCardTexts);
+  if (Array.isArray(saved.usedModeCardTexts)) STATE.usedModeCardTexts = new Set(saved.usedModeCardTexts);
+  if (saved.activeModeChoice) STATE.activeModeChoice = saved.activeModeChoice;
+  STATE.isGameActive = !!saved.isGameActive;
+
+  // Restaurar pantalla si había una partida activa en el tablero
+  if (STATE.isGameActive && saved.activeScreen === 'screen-board-game' && STATE.players.length >= 2) {
+    startBoardGame(true);
+    showToast(`💾 Partida reanudada en Casilla ${STATE.players[STATE.currentTurnIndex]?.position || 0} (Ronda ${STATE.round})`);
+    return true;
+  } else if (STATE.isGameActive && saved.activeScreen === 'screen-mode-game' && STATE.players.length >= 2) {
+    restoreModeGame(saved.selectedGameKey);
+    showToast('💾 Modo de juego reanudado');
+    return true;
+  } else if (saved.activeScreen === 'screen-choose-game' && STATE.players.length >= 2) {
+    renderPlayersScreen();
+    showScreen('screen-choose-game');
+    showToast('👥 Jugadores guardados listos');
+    return true;
+  } else {
+    renderPlayersScreen();
+    if (STATE.players.length > 0) {
+      showToast('👥 Jugadores guardados cargados');
+    }
+    return false;
+  }
+}
+
+function restoreModeGame(modeKey) {
+  closeModePreview();
+  const screen = document.getElementById('screen-mode-game');
+  if (screen) screen.dataset.game = modeKey;
+  document.getElementById('mode-game-title').textContent = MODE_DETAILS[modeKey]?.title || '';
+  renderModePlayers();
+  renderModeActions(modeKey === 'tod');
+  if (modeKey !== 'tod') {
+    const prompt = document.getElementById('mode-game-prompt');
+    if (prompt && !prompt.textContent) {
+      prompt.textContent = getModePrompt(modeKey);
+    }
+  }
+  showScreen('screen-mode-game');
+}
+
+function resetBoardGame() {
+  STATE.players.forEach(p => {
+    p.position = 0;
+    p.drinks = 0;
+    p.completed = 0;
+  });
+  STATE.currentTurnIndex = 0;
+  STATE.round = 1;
+  STATE.usedCardTexts.clear();
+  STATE.isGameActive = true;
+
+  renderTurnPlayersHeader();
+  renderSpiralBoard();
+  setDieFace(1);
+  saveGameState();
+  sound.playStep();
+  showToast('🔄 Partida reiniciada desde la casilla 0');
+}
 
 const MODE_DETAILS = {
   nhie: {
@@ -183,6 +335,22 @@ class SoundEngine {
     osc.start();
     osc.stop(this.ctx.currentTime + 0.12);
   }
+  playFlip() {
+    if (!this.enabled || !this.ctx) return;
+    try {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(340, this.ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(120, this.ctx.currentTime + 0.15);
+      gain.gain.setValueAtTime(0.22, this.ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start();
+      osc.stop(this.ctx.currentTime + 0.15);
+    } catch (_) {}
+  }
   playDrink() {
     if (!this.enabled || !this.ctx) return;
     const osc = this.ctx.createOscillator();
@@ -224,8 +392,11 @@ const sound = new SoundEngine();
 document.addEventListener('DOMContentLoaded', () => {
   setReferenceScale();
   loadCardsDatabase();
-  renderPlayersScreen();
   setupEventListeners();
+  const restored = restoreGameState();
+  if (!restored) {
+    renderPlayersScreen();
+  }
 });
 
 function setReferenceScale() {
@@ -244,6 +415,25 @@ function loadCardsDatabase() {
 }
 
 function setupEventListeners() {
+  // Botón Reanudar Partida Guardada (Caché / LocalStorage)
+  const resumeBtn = document.getElementById('btn-resume-game');
+  if (resumeBtn) {
+    resumeBtn.addEventListener('click', () => {
+      sound.playFanfare();
+      startBoardGame(true);
+    });
+  }
+
+  // Botón Reiniciar Partida en Tablero
+  const resetBtn = document.getElementById('btn-reset-board-game');
+  if (resetBtn) {
+    resetBtn.addEventListener('click', () => {
+      if (confirm('¿Deseas reiniciar la partida? Las posiciones de todos los jugadores volverán a la casilla 0.')) {
+        resetBoardGame();
+      }
+    });
+  }
+
   // Botón Sonido
   const soundBtn = document.getElementById('btn-sound-toggle');
   if (soundBtn) {
@@ -395,6 +585,7 @@ function setupEventListeners() {
       });
       closeAddModal();
       renderPlayersScreen();
+      saveGameState();
       sound.playStep();
     };
 
@@ -406,11 +597,29 @@ function setupEventListeners() {
   const die = document.getElementById('official-die');
   if (die) die.addEventListener('click', rollOfficialDie);
 
-  // Botones de Carta Modal
+  // Tarjeta 3D Volteable Oficial (Física y lógica de toque idéntica a Unity)
+  const cardWrapper = document.getElementById('card-3d-wrapper');
+  if (cardWrapper) {
+    cardWrapper.addEventListener('click', onCardWrapperClick);
+    cardWrapper.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        onCardWrapperClick();
+      }
+    });
+  }
+
+  // Botones opcionales de Acción en Carta Modal
   const doneBtn = document.getElementById('btn-card-done');
   const drinkBtn = document.getElementById('btn-card-drink');
-  if (doneBtn) doneBtn.addEventListener('click', () => handleCardAction(true));
-  if (drinkBtn) drinkBtn.addEventListener('click', () => handleCardAction(false));
+  if (doneBtn) doneBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    handleCardAction(true);
+  });
+  if (drinkBtn) drinkBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    handleCardAction(false);
+  });
 }
 
 function renderSelectedPlayerAvatar() {
@@ -435,6 +644,10 @@ function showScreen(screenId) {
   } else {
     appContainer.classList.remove('in-game-board');
   }
+
+  STATE.activeScreen = screenId;
+  updateResumeButtonVisibility();
+  saveGameState();
 }
 
 function openGamePreview(gameKey) {
@@ -737,14 +950,16 @@ function movePlayerSpiral(steps) {
   }, 230);
 }
 
+let currentCardState = 'NONE'; // 'NONE' | 'WAITING_FLIP' | 'SHOWING'
+
 // Abre la carta de reto correspondiente a la casilla
 function triggerTileCard(player) {
   if (player.position >= 62) {
     sound.playFanfare();
     showCardChallenge({
-      badge: '🏆 ¡CAMPEÓN DE LA GUATOCA!',
-      color: '#10b981',
-      title: `¡${player.name.toUpperCase()} HA LLEGADO AL END!`,
+      type: 'event',
+      category: '🏆 ¡CAMPEÓN!',
+      title: `¡${player.name.toUpperCase()} HA LLEGADO AL FINAL!`,
       text: '¡Ha ganado la partida de La Guatoca! Todos los demás jugadores se terminan su vaso o shot ahora mismo.'
     });
     return;
@@ -770,20 +985,35 @@ function triggerTileCard(player) {
     .replace(/\{turn\}/g, player.name)
     .replace(/\{otherPlayer\}/g, otherName);
 
-  const categories = [
-    { badge: '🍺 TOMA', color: '#05b1df' },
-    { badge: '🙈 YO NUNCA', color: '#818cf8' },
-    { badge: '💬 VERDAD', color: '#c084fc' },
-    { badge: '⚡ RETO', color: '#fb923c' },
-    { badge: '🌶️ HOT', color: '#ff2e93' },
-    { badge: '🎲 EVENTO', color: '#facc15' }
-  ];
-  const cat = categories[player.position % categories.length];
+  // Mapeo dinámico a las 6 categorías oficiales extraídas de Unity IL2CPP
+  const lower = formatted.toLowerCase();
+  let cardType = 'drink';
+  let categoryName = 'TOMAR';
+
+  if (lower.startsWith('yo nunca')) {
+    cardType = 'nhie';
+    categoryName = 'YO NUNCA';
+  } else if (lower.startsWith('verdad') || lower.includes('confiesa')) {
+    cardType = 'truth';
+    categoryName = 'VERDAD';
+  } else if (lower.startsWith('reto') || lower.includes('imita') || lower.includes('baila')) {
+    cardType = 'dare';
+    categoryName = 'RETO';
+  } else if (STATE.selectedGameKey === 'hot' || lower.includes('beso') || lower.includes('sex') || lower.includes('desnúd') || lower.includes('ropa')) {
+    cardType = 'hot';
+    categoryName = 'HOT';
+  } else if (player.position % 5 === 0 || lower.includes('todos') || lower.includes('ronda')) {
+    cardType = 'event';
+    categoryName = 'EVENTO';
+  } else {
+    cardType = 'drink';
+    categoryName = 'TOMAR';
+  }
 
   showCardChallenge({
-    badge: cat.badge,
-    color: cat.color,
-    title: `Casilla ${player.position} · Reto para ${player.name}`,
+    type: cardType,
+    category: categoryName,
+    title: `Casilla ${player.position} · Turno de ${player.name}`,
     text: formatted
   });
 }
@@ -793,23 +1023,54 @@ function showCardChallenge(card) {
   sound.playCard();
 
   const modal = document.getElementById('modal-card-challenge');
-  const badge = document.getElementById('card-badge-pill');
   const target = document.getElementById('card-target-banner');
+  const frontTitle = document.getElementById('card-front-title');
   const prompt = document.getElementById('card-challenge-prompt');
+  const wrapper = document.getElementById('card-3d-wrapper');
+  const frontFace = document.getElementById('card-face-front');
+  const backFace = document.getElementById('card-face-back');
+  const actionsWrapper = document.getElementById('card-actions-wrapper');
 
-  if (badge) {
-    badge.textContent = card.badge;
-    badge.style.backgroundColor = card.color;
-  }
   if (target) target.textContent = card.title;
+  if (frontTitle) frontTitle.textContent = card.category;
   if (prompt) prompt.textContent = card.text;
+
+  // Cargar sprites oficiales 1:1 extraídos de Unity
+  if (frontFace) frontFace.style.backgroundImage = `url('assets/original/cards/front_${card.type}.png')`;
+  if (backFace) backFace.style.backgroundImage = `url('assets/original/cards/back_${card.type}.png')`;
+
+  // Estado inicial: WAITING_FLIP (Mostrando el anverso de la categoría)
+  currentCardState = 'WAITING_FLIP';
+  if (wrapper) wrapper.classList.remove('flipped');
+  if (actionsWrapper) actionsWrapper.classList.remove('visible');
 
   if (modal) modal.classList.add('open');
 }
 
+function onCardWrapperClick() {
+  if (currentCardState === 'WAITING_FLIP') {
+    // 3D Flip rotación en eje Y de 0 a 180 grados con física elástica
+    const wrapper = document.getElementById('card-3d-wrapper');
+    const actionsWrapper = document.getElementById('card-actions-wrapper');
+    if (wrapper) wrapper.classList.add('flipped');
+    if (actionsWrapper) actionsWrapper.classList.add('visible');
+    sound.playFlip();
+    currentCardState = 'SHOWING';
+  } else if (currentCardState === 'SHOWING') {
+    // Al tocar la carta de nuevo se descarta y avanza turno automáticamente como en la app oficial
+    handleCardAction(true);
+  }
+}
+
 function handleCardAction(isDone) {
+  currentCardState = 'NONE';
   const modal = document.getElementById('modal-card-challenge');
+  const wrapper = document.getElementById('card-3d-wrapper');
+  const actionsWrapper = document.getElementById('card-actions-wrapper');
+
   if (modal) modal.classList.remove('open');
+  if (wrapper) wrapper.classList.remove('flipped');
+  if (actionsWrapper) actionsWrapper.classList.remove('visible');
 
   const p = STATE.players[STATE.currentTurnIndex];
   if (p) {

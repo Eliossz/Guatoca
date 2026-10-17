@@ -70,6 +70,14 @@
         <div class="nav-tab-item" id="tab-modos">MODOS</div>
       </div>
 
+      <!-- Banner de Reanudar Partida Guardada -->
+      <div id="resume-game-banner" class="resume-game-banner" style="display: none;">
+        <button type="button" id="btn-resume-game" class="btn-resume-game">
+          <span class="resume-badge">PARTIDA EN MEMORIA</span>
+          <span class="resume-desc">▶ Continuar en <b id="resume-board-name">Clásico</b> (Ronda <span id="resume-round-num">1</span>)</span>
+        </button>
+      </div>
+
       <!-- Lista de Cápsulas de Tableros -->
       <div class="cards-selection-list" id="list-tableros">
         <!-- Clásico -->
@@ -139,7 +147,7 @@
       <!-- Cabecera Superior en Partida -->
       <div class="app-header">
         <button id="btn-back-to-choose" class="header-btn back-btn" title="Volver a Selección"><img src="assets/original/icon-back-arrow.png" alt=""></button>
-        <button class="header-btn help-btn" title="Ayuda">?</button>
+        <button id="btn-reset-board-game" class="header-btn reset-btn" title="Reiniciar Partida" aria-label="Reiniciar Partida">🔄</button>
       </div>
 
       <!-- Fila superior de turnos con los avatares -->

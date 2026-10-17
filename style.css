@@ -2292,3 +2292,110 @@ body {
   font-size: 21px;
   line-height: 1;
 }
+
+/* ===================================================
+   CACHE & SESSION RESTORE UI (Toast & Resume Banner)
+=================================================== */
+.resume-game-banner {
+  position: absolute;
+  top: 250px;
+  left: 20px;
+  right: 20px;
+  z-index: 80;
+  display: flex;
+  justify-content: center;
+}
+
+.btn-resume-game {
+  width: 100%;
+  max-width: 380px;
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+  color: #ffffff;
+  border: 2px solid #6ee7b7;
+  border-radius: 20px;
+  padding: 10px 16px;
+  font-family: 'Boogaloo', cursive, sans-serif;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  transition: transform 0.2s ease, filter 0.2s ease;
+  animation: pulseResume 2s infinite ease-in-out;
+}
+
+.btn-resume-game:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.08);
+}
+
+.resume-badge {
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+  color: #d1fae5;
+  text-transform: uppercase;
+}
+
+.resume-desc {
+  font-size: 1.25rem;
+  letter-spacing: 0.5px;
+}
+
+@keyframes pulseResume {
+  0%, 100% {
+    box-shadow: 0 6px 18px rgba(16, 185, 129, 0.45);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 8px 26px rgba(16, 185, 129, 0.7);
+    transform: scale(1.02);
+  }
+}
+
+.header-btn.reset-btn {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #fff;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.header-btn.reset-btn:hover {
+  transform: rotate(45deg) scale(1.1);
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* Toast Notification */
+.guatoca-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(40px);
+  background: rgba(22, 12, 38, 0.94);
+  color: #ffd24c;
+  font-family: 'Boogaloo', cursive, sans-serif;
+  font-size: 1.2rem;
+  padding: 10px 24px;
+  border-radius: 30px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.65), 0 0 0 1.5px rgba(255, 210, 76, 0.4);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 4000;
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 0.35s cubic-bezier(0.34, 1.4, 0.64, 1), opacity 0.3s ease;
+  letter-spacing: 0.5px;
+  text-align: center;
+  max-width: 90vw;
+}
+
+.guatoca-toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
