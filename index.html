@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>La Guatoca · El Juego para Tomar</title>
+  <meta name="description" content="El juego oficial de la oca para tomar con amigos en previas y rumbas. ¡Lanza el dado y cumple los retos!">
+  <meta name="theme-color" content="#22123b">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="La Guatoca">
+
+  <!-- Open Graph / Redes Sociales -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="La Guatoca · El Juego para Tomar">
+  <meta property="og:description" content="El juego oficial de la oca para tomar con amigos en previas y rumbas. ¡Lanza el dado y cumple los retos!">
+  <meta property="og:image" content="icon.png">
+
+  <!-- Favicon y Manifest PWA -->
+  <link rel="icon" type="image/png" href="icon.png">
+  <link rel="apple-touch-icon" href="icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Contenedor Principal con estilo de App Móvil -->
+  <div id="app-container">
+
+    <!-- ==========================================================
+         PANTALLA 1: ¿QUIÉN TOMA HOY? (SELECCIÓN DE JUGADORES)
+         ========================================================== -->
+    <section id="screen-players" class="screen active">
+      <!-- Cabecera Superior -->
+      <div class="app-header">
+        <button class="header-btn lang-btn" title="Idioma"><img src="assets/original/icon-flag-es419.png" alt=""></button>
+        <button class="header-btn settings-btn" id="btn-sound-toggle" title="Desactivar sonido" aria-pressed="true"><img src="assets/original/icon-settings.png" alt=""></button>
+      </div>
+
+      <h1 class="screen-title">¿QUIÉN TOMA HOY?</h1>
+
+      <!-- Cuadrícula 3 columnas de Jugadores (Botón + y avatares smilies) -->
+      <div class="players-grid-container" id="players-grid-container">
+        <!-- Renderizado dinámicamente por app.js -->
+      </div>
+
+      <!-- Barra Inferior: Mascota Oca y Botón EMPEZAR -->
+      <div class="players-bottom-bar">
+        <div class="goose-mascot-box" aria-hidden="true"></div>
+        <button id="btn-empezar-lobby" class="btn-empezar">EMPEZAR</button>
+      </div>
+    </section>
+
+    <!-- ==========================================================
+         PANTALLA 2: ¿QUÉ VAMOS A JUGAR? (TABLEROS Y MODOS)
+         ========================================================== -->
+    <section id="screen-choose-game" class="screen">
+      <!-- Cabecera Superior -->
+      <div class="app-header">
+        <button id="btn-back-to-lobby" class="header-btn back-btn" title="Atrás"><img src="assets/original/icon-back-arrow.png" alt=""></button>
+          <button class="header-btn settings-btn" title="Configuración" aria-label="Configuración"><img src="assets/original/icon-settings.png" alt=""></button>
+      </div>
+
+      <h1 class="screen-title">¿QUÉ VAMOS A JUGAR?</h1>
+
+      <!-- Pestañas TABLEROS / MODOS -->
+      <div class="tab-navigation">
+        <div class="nav-tab-item active" id="tab-tableros">TABLEROS</div>
+        <div class="nav-tab-item" id="tab-modos">MODOS</div>
+      </div>
+
+      <!-- Lista de Cápsulas de Tableros -->
+      <div class="cards-selection-list" id="list-tableros">
+        <!-- Clásico -->
+        <button class="game-capsule-btn btn-clasico" data-game="classic">
+          <span class="capsule-title-text">CLÁSICO</span>
+        </button>
+
+        <!-- Etílico -->
+        <button class="game-capsule-btn btn-etilico" data-game="hammered">
+
+          <span class="capsule-title-text">ETÍLICO</span>
+        </button>
+
+        <!-- Hot -->
+        <button class="game-capsule-btn btn-hot" data-game="hot">
+
+          <span class="capsule-title-text">HOT</span>
+        </button>
+
+        <!-- Pareja -->
+        <button class="game-capsule-btn btn-pareja" data-game="couple">
+
+          <span class="capsule-title-text">PAREJA</span>
+        </button>
+
+        <!-- Flash -->
+        <button class="game-capsule-btn btn-flash" data-game="flash">
+
+          <span class="capsule-title-text">FLASH</span>
+        </button>
+
+        <!-- XXL -->
+        <button class="game-capsule-btn btn-xxl" data-game="xxl">
+
+          <span class="capsule-title-text">XXL</span>
+        </button>
+      </div>
+
+      <!-- Lista de Cápsulas de Modos -->
+      <div class="cards-selection-list" id="list-modos" style="display: none;">
+        <!-- Yo Nunca -->
+        <button class="game-capsule-btn btn-nhie" data-game="nhie">
+          <span class="capsule-title-text">YO NUNCA</span>
+        </button>
+
+        <!-- Verdad o Reto -->
+        <button class="game-capsule-btn btn-tod" data-game="tod">
+          <span class="capsule-title-text">VERDAD O<br>RETO</span>
+        </button>
+
+        <!-- Quién es más probable -->
+        <button class="game-capsule-btn btn-mlt" data-game="mlt">
+          <span class="capsule-title-text">QUIÉN ES MÁS<br>PROBABLE QUE</span>
+        </button>
+
+        <!-- Versus -->
+        <button class="game-capsule-btn btn-versus" data-game="versus">
+          <span class="capsule-title-text">VERSUS</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- ==========================================================
+         PANTALLA 3: TABLERO DE JUEGO (ESPIRAL 9x8 CON 62 CASILLAS)
+         ========================================================== -->
+    <section id="screen-board-game" class="screen">
+      <!-- Cabecera Superior en Partida -->
+      <div class="app-header">
+        <button id="btn-back-to-choose" class="header-btn back-btn" title="Volver a Selección"><img src="assets/original/icon-back-arrow.png" alt=""></button>
+        <button class="header-btn help-btn" title="Ayuda">?</button>
+      </div>
+
+      <!-- Fila superior de turnos con los avatares -->
+      <div class="board-turn-players-row" id="board-turn-players-row">
+        <!-- Renderizado dinámicamente por app.js -->
+      </div>
+
+      <!-- El Tablero Cuadrado en Espiral de 62 Casillas Oficiales -->
+      <div class="spiral-board-frame" id="spiral-board-frame">
+        <!-- 62 casillas colocadas en espiral -->
+      </div>
+
+      <!-- Barra Inferior: Dado Blanco 3D Oficial y Acción de Tirar -->
+      <div class="in-game-bottom-bar">
+        <button type="button" class="official-white-die die-1" id="official-die" aria-label="Lanzar dado">
+          <div class="die-pip"></div>
+        </button>
+      </div>
+    </section>
+
+    <!-- Pantalla de partida de los modos de cartas -->
+    <section id="screen-mode-game" class="screen" aria-live="polite">
+      <button type="button" class="mode-game-back" id="btn-mode-game-back" aria-label="Volver a modos">
+        <img src="assets/original/icon-back-arrow.png" alt="">
+      </button>
+      <h1 class="mode-game-title" id="mode-game-title"></h1>
+      <div class="mode-game-players" id="mode-game-players"></div>
+      <p class="mode-game-prompt" id="mode-game-prompt"></p>
+      <div class="mode-game-actions" id="mode-game-actions"></div>
+    </section>
+
+    <!-- ==========================================================
+         MODALES
+         ========================================================== -->
+
+    <!-- Modal 1: Añadir Nuevo Jugador -->
+    <div class="modal-overlay" id="modal-add-player">
+      <div class="modal-sheet player-create-sheet">
+        <button type="button" class="player-create-close" id="btn-close-add-player" aria-label="Cerrar">×</button>
+        <h3 class="modal-sheet-title">Crear jugador</h3>
+        <div class="player-avatar-picker" aria-label="Elige tu avatar">
+          <button type="button" class="player-avatar-arrow" id="btn-player-avatar-prev" aria-label="Avatar anterior">‹</button>
+          <div class="player-avatar-preview-rim" id="player-avatar-preview-rim">
+            <span class="player-avatar-preview" id="player-avatar-preview" aria-hidden="true">😀</span>
+          </div>
+          <button type="button" class="player-avatar-arrow" id="btn-player-avatar-next" aria-label="Avatar siguiente">›</button>
+        </div>
+        <input type="text" id="new-player-name-input" class="modal-text-input" placeholder="Nombre del jugador..." maxlength="12" autocomplete="off">
+        <div class="modal-actions-row">
+          <button id="btn-cancel-add-player" class="btn-modal-action btn-modal-cancel">Cancelar</button>
+          <button id="btn-confirm-add-player" class="btn-modal-action btn-modal-confirm">AGREGAR</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal 2: Carta 3D Oficial de la Casilla (Idéntica a la App Oficial Guatoca) -->
+    <div class="modal-overlay modal-card-overlay" id="modal-card-challenge">
+      <div class="card-scene-container">
+        <div class="card-target-banner" id="card-target-banner">Casilla 1 · Reto para Elio</div>
+
+        <!-- Tarjeta 3D Volteable con física y sonido -->
+        <div class="card-3d-wrapper" id="card-3d-wrapper" role="button" tabindex="0" aria-label="Carta de la casilla. Toca para voltear.">
+          <!-- Cara Frontal (Anverso): Categoría (TOMAR, RETO, YO NUNCA, etc.) -->
+          <div class="card-face card-face-front" id="card-face-front">
+            <div class="card-front-title" id="card-front-title">TOMAR</div>
+            <div class="card-tap-pill">👆 TOCA PARA VOLTEAR</div>
+          </div>
+
+          <!-- Cara Trasera (Reverso): Bocadillo de cómic + Ganso + Reto oficial -->
+          <div class="card-face card-face-back" id="card-face-back">
+            <div class="card-bubble-content">
+              <p class="card-challenge-prompt" id="card-challenge-prompt">Cargando reto oficial...</p>
+            </div>
+            <div class="card-back-tap-hint">👆 Toca para continuar</div>
+          </div>
+        </div>
+
+        <!-- Acciones opcionales para marcar cumplido o castigo -->
+        <div class="card-actions-wrapper" id="card-actions-wrapper">
+          <button id="btn-card-done" class="btn-card-action success">✅ ¡CUMPLIDO!</button>
+          <button id="btn-card-drink" class="btn-card-action penalty">🍺 TOMAR CASTIGO</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ficha informativa de cada modo, igual al paso previo de la APK -->
+    <div class="mode-preview-overlay" id="modal-mode-preview" aria-hidden="true">
+      <section class="mode-preview-sheet" id="mode-preview-sheet" role="dialog" aria-modal="true" aria-labelledby="mode-preview-title">
+        <button type="button" class="mode-preview-close" id="btn-close-mode-preview" aria-label="Cerrar">×</button>
+        <h2 class="mode-preview-title" id="mode-preview-title"></h2>
+        <div class="mode-preview-rule"></div>
+        <p class="mode-preview-description" id="mode-preview-description"></p>
+        <div class="mode-preview-sample">
+          <p id="mode-preview-sample"></p>
+          <span aria-hidden="true"><i></i><i></i><i></i></span>
+        </div>
+        <button type="button" class="mode-preview-play" id="btn-mode-preview-play">JUGAR</button>
+      </section>
+    </div>
+
+
+
+
+  </div>
+
+  <!-- Scripts -->
+  <script src="cardsData.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

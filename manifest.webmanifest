@@ -1,0 +1,19 @@
+{
+  "name": "La Guatoca · El Juego para Beber",
+  "short_name": "La Guatoca",
+  "description": "El juego oficial de la oca para beber con amigos",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#22123b",
+  "theme_color": "#22123b",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
