@@ -841,7 +841,6 @@ const sound = new SoundEngine();
 document.addEventListener('DOMContentLoaded', () => {
   ambientFX = new AmbientFXEngine('ambient-canvas');
   celebrationFX = new CelebrationFXEngine('celebration-canvas');
-  setReferenceScale();
   loadCardsDatabase();
   setupEventListeners();
   const restored = restoreGameState();
@@ -850,13 +849,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   initPwaManager();
 });
-
-function setReferenceScale() {
-  const scale = Math.min(window.innerWidth / 477, window.innerHeight / 1024);
-  document.documentElement.style.setProperty('--reference-scale', String(scale));
-}
-
-window.addEventListener('resize', setReferenceScale);
 
 function loadCardsDatabase() {
   if (window.GUATOCA_DATA) {
@@ -1099,9 +1091,11 @@ function showScreen(screenId) {
   const appContainer = document.getElementById('app-container');
   if (screenId === 'screen-board-game') {
     appContainer.classList.add('in-game-board');
+    document.body.classList.add('in-game-board');
     if (typeof hidePwaInviteBanner === 'function') hidePwaInviteBanner(false);
   } else {
     appContainer.classList.remove('in-game-board');
+    document.body.classList.remove('in-game-board');
   }
 
   STATE.activeScreen = screenId;

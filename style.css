@@ -1,5 +1,5 @@
 :root {
-  --bg-purple: #300759;
+  --bg-purple: #440d68;
   --bg-purple-dark: #230442;
   --bg-lavender: #f3eeff;
   --purple-btn: #8b12f7;
@@ -163,28 +163,25 @@ body {
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
-#screen-players .screen-title {
-  top: 159px;
-  left: 84px;
-  right: auto;
-  width: 309px;
-  height: 45px;
-  background: url("assets/players_screen.jpg") -84px -159px / 477px 1024px no-repeat;
-  color: transparent;
-  font-size: 0;
-  text-shadow: none;
-}
+/* Title text styled cleanly via .screen-title */
 
 #screen-choose-game .screen-title {
-  top: 158px;
-  left: 52px;
+  position: relative;
+  top: auto;
+  left: auto;
   right: auto;
-  width: 373px;
-  height: 46px;
-  background: url("assets/boards_top.jpg") -52px -158px / 477px 1024px no-repeat;
-  color: transparent;
-  font-size: 0;
-  text-shadow: none;
+  width: auto;
+  height: auto;
+  margin: 6px auto 14px;
+  text-align: center;
+  color: #fff;
+  font-family: "Boogaloo", sans-serif;
+  font-size: 38px;
+  font-weight: 400;
+  line-height: 1.1;
+  text-shadow: 0 3px 3px rgba(0, 0, 0, 0.55);
+  background: none !important;
+  flex: none;
 }
 
 /* ===================================================
@@ -302,15 +299,6 @@ body {
   justify-content: space-between;
   margin-top: 20px;
   position: relative;
-}
-
-.goose-mascot-box {
-  width: 160px;
-  height: 160px;
-  position: relative;
-  margin-left: -20px;
-  margin-bottom: -24px;
-  pointer-events: none;
 }
 
 .btn-empezar {
@@ -488,6 +476,8 @@ body {
 /* ===================================================
    SCREEN 3: EL TABLERO DE JUEGO (IMAGE 4)
 =================================================== */
+body.in-game-board,
+body:has(#app-container.in-game-board),
 #app-container.in-game-board {
   background-color: var(--bg-lavender);
   color: #1e1b4b;
@@ -645,28 +635,6 @@ body {
   letter-spacing: 1px;
 }
 
-/* Player Chip on Cell */
-.cell-puck {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: #facc15;
-  border: 2px solid #000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1rem;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4);
-  position: absolute;
-  z-index: 10;
-  animation: jumpCell 0.3s ease;
-}
-
-@keyframes jumpCell {
-  0% { transform: translateY(-16px) scale(1.3); }
-  100% { transform: translateY(0) scale(1); }
-}
-
 /* Bottom Die (Image 4) */
 .in-game-bottom-bar {
   display: flex;
@@ -740,7 +708,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding: clamp(10px, 3vw, 20px);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.25s ease;
@@ -793,620 +761,717 @@ body {
   gap: 12px;
 }
 
-/* Captura de referencia: la interfaz original se compone a 477 x 1024 y se
-   escala de forma uniforme para conservar sus proporciones en cada pantalla. */
-html,
-body {
+/* ==========================================================================
+   ARQUITECTURA DE DISEÑO TOTALMENTE RESPONSIVA Y FLUIDA
+   Elimina franjas laterales accidentales y escala matemáticamente
+   en cualquier pantalla móvil y desktop sin deformaciones.
+   ========================================================================== */
+
+:root {
+  --bg-purple: #440d68;
+  --bg-purple-dark: #230442;
+  --bg-purple-vibrant: #440d68;
+  --bg-lavender: #f3eeff;
+  --purple-btn: #8b12f7;
+  --purple-glow: rgba(139, 18, 247, 0.45);
+  --text-white: #ffffff;
+}
+
+html {
+  box-sizing: border-box;
+  -webkit-text-size-adjust: 100%;
   width: 100%;
   height: 100%;
-  min-height: 0;
-  overflow: hidden;
 }
 
 body {
-  align-items: center;
-  background: #440d68;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background-color: var(--bg-purple);
+  color: var(--text-white);
+  font-family: "Boogaloo", 'Arial Rounded MT Bold', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  overflow-x: hidden;
+  position: relative;
 }
 
 #app-container {
-  width: 477px;
-  height: 1024px;
-  min-height: 0;
-  flex: none;
-  overflow: hidden;
-  transform: scale(var(--reference-scale, 1));
-  transform-origin: center center;
-  box-shadow: none;
+  width: 100%;
+  max-width: 480px;
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  background-color: var(--bg-purple);
+  overflow-x: hidden;
+  box-shadow: 0 0 50px rgba(0, 0, 0, 0.55);
 }
 
+/* Pantallas independientes */
 .screen {
-  position: absolute;
-  inset: 0;
+  display: none;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  flex: 1 1 auto;
+  flex-direction: column;
+  position: relative;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
   padding: 0;
-  overflow: hidden;
-  animation: none;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
+.screen::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.screen.active {
+  display: flex;
+}
+
+/* Cabecera superior adaptativa con safe-area */
 .app-header {
-  position: absolute;
-  top: 68px;
-  left: 20px;
-  right: 20px;
-  width: auto;
-  padding: 0;
-}
-
-.app-header > div {
-  gap: 12px !important;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: max(14px, env(safe-area-inset-top, 14px)) max(16px, env(safe-area-inset-right, 16px)) 8px max(16px, env(safe-area-inset-left, 16px));
+  position: relative;
+  z-index: 25;
+  gap: 8px;
 }
 
 .header-btn {
-  width: 61px;
-  height: 62px;
+  width: clamp(44px, 12vw, 54px);
+  height: clamp(44px, 12vw, 54px);
   flex: none;
-  box-shadow: none;
-  background-color: transparent;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  transition: transform 0.15s ease, filter 0.15s ease;
   background-repeat: no-repeat;
+  background-position: center;
 }
 
-#screen-players .header-btn {
-  background-image: url("assets/players_screen.jpg");
-  background-size: 477px 1024px;
+.header-btn:active {
+  transform: scale(0.92);
 }
 
-#screen-choose-game .header-btn {
-  background-image: url("assets/boards_top.jpg");
-  background-size: 477px 1024px;
+.header-btn img {
+  display: block;
+  width: 72%;
+  height: 72%;
+  object-fit: contain;
 }
 
 .header-btn.lang-btn {
-  width: 61px;
-  height: 62px;
-  background-position: -19px -69px;
-  border: 0;
-  color: transparent;
+  background: transparent;
+  padding: 0;
+  border: none;
+  box-shadow: none;
 }
 
-.header-btn.crown-btn {
-  width: 61px;
-  height: 62px;
-  margin: 0;
-  background-position: -324px -68px;
-  color: transparent;
+.header-btn.lang-btn img {
+  width: 100%;
+  height: 100%;
 }
 
-.header-btn.settings-btn {
-  width: 61px;
-  height: 62px;
-  background-position: -397px -68px;
-  color: transparent;
+.header-btn.settings-btn,
+.header-btn.back-btn,
+.header-btn.help-btn {
+  background: #9510df;
+  border: none;
 }
 
 .header-btn.help-btn {
-  width: 61px;
-  height: 62px;
-  background-position: -397px -68px;
-  color: transparent;
+  color: #fff;
+  font-family: "Boogaloo", sans-serif;
+  font-size: clamp(26px, 7vw, 36px);
+  font-weight: 900;
+  line-height: 1;
 }
 
-.header-btn.back-btn {
-  width: 61px;
-  height: 62px;
-  background-position: -19px -68px;
-  color: transparent;
-}
-
-#screen-board-game .header-btn {
-  background-image: url("assets/board_game.jpg");
-  background-size: 477px 1024px;
-}
-
-#screen-board-game .header-btn.back-btn {
-  background-position: -19px -68px;
-}
-
-#screen-board-game .header-btn.help-btn {
-  background-position: -397px -68px;
-}
-
+/* Título de pantallas */
 .screen-title {
-  position: absolute;
-  top: 163px;
-  left: 10px;
-  right: 10px;
-  margin: 0;
-  font-family: "Arial Rounded MT Bold", "Trebuchet MS", sans-serif;
-  font-size: 42px;
+  font-family: "Boogaloo", sans-serif;
+  font-size: clamp(2rem, 6.5vw, 2.7rem);
+  font-weight: 900;
+  color: #ffffff;
+  text-align: center;
+  text-shadow: 0 4px 2px rgba(0, 0, 0, 0.55);
+  margin: 4px 0 14px;
+  position: relative;
+  z-index: 10;
+  padding: 0 12px;
   line-height: 1.1;
-  letter-spacing: 0;
-  text-shadow: 0 3px 3px rgba(0, 0, 0, 0.55);
+  letter-spacing: 0.5px;
 }
 
+/* Cuadrícula de jugadores en Lobby */
 .players-grid-container {
-  position: absolute;
-  top: 241px;
-  left: 36px;
-  width: 405px;
-  margin: 0;
-  padding: 0;
-  grid-template-columns: repeat(3, 126px);
-  grid-auto-rows: 162px;
-  gap: 11px 13px;
+  width: 100%;
+  max-width: 390px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(10px, 2.8vw, 16px);
+  justify-items: center;
+  align-content: start;
+  padding: 6px 14px;
+  flex: 1 1 auto;
+  position: relative;
+  z-index: 10;
+}
+
+.player-avatar-unit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  max-width: 110px;
 }
 
 .add-player-circle,
 .avatar-token-rim {
-  width: 126px;
-  height: 126px;
+  width: clamp(84px, 24vw, 108px);
+  height: clamp(84px, 24vw, 108px);
+  border-radius: 50%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
 }
 
 .add-player-circle {
-  background: url("assets/players_screen.jpg") -36px -241px / 477px 1024px no-repeat;
-  box-shadow: none;
-  border: 0;
-  padding: 0;
-  appearance: none;
+  background: #ffffff;
+  border: 4px solid #ede9fe;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.add-player-circle:active {
+  transform: scale(0.94);
 }
 
 .plus-symbol {
-  visibility: hidden;
+  font-size: clamp(42px, 12vw, 54px);
+  font-weight: 900;
+  color: #8b12f7;
+  line-height: 1;
+  margin-top: -4px;
+  visibility: visible;
 }
 
 .avatar-token-rim {
-  padding: 19px;
-  box-shadow: none;
+  padding: 6px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
 }
 
 .avatar-inner-face {
-  width: 88px;
-  height: 88px;
-  flex: none;
-  border: 0;
-  background: url("assets/players_screen.jpg") -194px -260px / 477px 1024px no-repeat;
-  font-size: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: url("assets/original/player-smiley.png") center / cover no-repeat;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar-inner-face.avatar-emoji {
+  background: none;
+  font-size: clamp(38px, 11vw, 48px);
+  line-height: 1;
 }
 
 .token-del-cross {
-  top: 0;
-  right: 0;
-  width: 42px;
-  height: 42px;
-  border: 0;
-  font-size: 25px;
-  color: #21132b;
-  background: #f7efff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
-  padding: 0;
-  font-family: inherit;
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: clamp(28px, 8vw, 36px);
+  height: clamp(28px, 8vw, 36px);
+  border-radius: 50%;
+  background: #f43f5e;
+  color: #fff;
+  border: 2px solid #fff;
+  font-size: clamp(14px, 4vw, 18px);
+  font-weight: 900;
   line-height: 1;
-  appearance: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  transition: transform 0.15s ease;
+  z-index: 5;
+}
+
+.token-del-cross:active {
+  transform: scale(0.9);
 }
 
 .player-unit-name {
-  margin-top: 1px;
-  font-size: 27px;
+  font-family: "Boogaloo", "Arial Rounded MT Bold", sans-serif;
+  font-size: clamp(1.1rem, 4vw, 1.45rem);
   font-weight: 700;
-  line-height: 1.1;
-  font-family: "Arial Rounded MT Bold", "Trebuchet MS", sans-serif;
-  text-shadow: 0 2px 2px rgba(0, 0, 0, 0.8);
+  color: #ffffff;
+  text-align: center;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
+/* ==========================================================================
+   BARRA INFERIOR DEL LOBBY Y BOTÓN EMPEZAR CENTRADO
+   ========================================================================== */
 .players-bottom-bar {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 477px;
-  height: 278px;
-  margin: 0;
+  position: relative;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: auto;
+  padding: 8px 16px max(18px, env(safe-area-inset-bottom, 18px));
+  min-height: clamp(160px, 24vh, 210px);
+  z-index: 10;
 }
 
 .goose-mascot-box {
   position: absolute;
-  left: 0;
   bottom: 0;
-  width: 340px;
-  height: 270px;
+  left: 4px;
   margin: 0;
-  background: url("assets/players_screen.jpg") 0 -754px / 477px 1024px no-repeat;
+  width: clamp(120px, 34vw, 175px);
+  height: clamp(130px, 36vw, 185px);
+  background: url("assets/original/goose-beer.png") bottom left / contain no-repeat;
+  pointer-events: none;
+  z-index: 2;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.35));
 }
 
 .btn-empezar {
-  position: absolute;
-  right: 20px;
-  bottom: 198px;
-  width: 197px;
-  height: 80px;
-  margin: 0;
-  padding: 0;
-  border-radius: 0;
-  box-shadow: none;
-  background: url("assets/players_screen.jpg") -260px -745px / 477px 1024px no-repeat;
-  color: transparent;
-  font-size: 0;
-}
-
-.tab-navigation {
-  position: absolute;
-  top: 242px;
-  left: 14px;
-  right: 14px;
-  height: 56px;
-  margin: 0;
-  justify-content: space-between;
-  gap: 0;
-  border: 0;
-}
-
-.spiral-cell.tile-start,
-.spiral-cell.tile-start.start-reference,
-.spiral-cell.tile-start.start-cleared {
-  background: transparent !important;
-  border: 0 !important;
-  box-shadow: none !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  position: relative !important;
-}
-
-.tile-start.start-cleared .start-text-label {
-  display: none !important;
-}
-
-.nav-tab-item {
-  width: 212px;
-  height: 56px;
-  padding: 0 0 12px;
-  border-bottom: 4px solid rgba(255, 255, 255, 0.35);
-  font-size: 32px;
-  line-height: 1.1;
-  text-align: center;
-  opacity: 0.55;
-}
-
-.nav-tab-item.active {
-  opacity: 1;
-  border-color: #fff;
-}
-
-.nav-tab-item.active::after {
-  display: none;
-}
-
-.cards-selection-list {
-  position: absolute;
-  top: 341px;
-  left: 85px;
-  width: 307px;
-  max-height: 683px;
-  height: 683px;
-  margin: 0;
-  padding: 10px 0 28px;
-  gap: 42px;
-  overflow-x: hidden;
-  scrollbar-width: none;
-}
-
-.cards-selection-list::-webkit-scrollbar {
-  display: none;
-}
-
-.game-capsule-btn {
-  width: 307px;
-  height: 114px;
-  min-height: 114px;
-  flex: none;
-  border: 0;
-  border-radius: 0;
-  box-shadow: none;
-  background-repeat: no-repeat;
-  background-color: transparent;
-}
-
-.capsule-title-text,
-.capsule-crown-icon {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-.btn-clasico {
-  background-image: url("assets/boards_top.jpg");
-  background-size: 477px 1024px;
-  background-position: -85px -352px;
-}
-
-.btn-etilico {
-  background-image: url("assets/boards_top.jpg");
-  background-size: 477px 1024px;
-  background-position: -85px -509px;
-}
-
-.btn-hot {
-  background-image: url("assets/boards_top.jpg");
-  background-size: 477px 1024px;
-  background-position: -84px -664px;
-}
-
-.btn-pareja {
-  background-image: url("assets/boards_top.jpg");
-  background-size: 477px 1024px;
-  background-position: -85px -824px;
-}
-
-.btn-flash {
-  background-image: url("assets/boards_scroll.jpg");
-  background-size: 477px 1024px;
-  background-position: -85px -732px;
-}
-
-.btn-xxl {
-  background-image: url("assets/boards_scroll.jpg");
-  background-size: 477px 1024px;
-  background-position: -87px -886px;
-}
-
-.btn-nhie {
-  width: 307px;
-  height: 122px;
-  min-height: 122px;
-  background-image: url("assets/modes_screen.jpg");
-  background-size: 477px 1024px;
-  background-position: -86px -350px;
-}
-
-.btn-tod {
-  width: 307px;
-  height: 136px;
-  min-height: 136px;
-  background-image: url("assets/modes_screen.jpg");
-  background-size: 477px 1024px;
-  background-position: -80px -491px;
-}
-
-.btn-mlt {
-  width: 307px;
-  height: 136px;
-  min-height: 136px;
-  background-image: url("assets/modes_screen.jpg");
-  background-size: 477px 1024px;
-  background-position: -83px -658px;
-}
-
-.btn-versus {
-  width: 307px;
-  height: 140px;
-  min-height: 140px;
-  background-image: url("assets/modes_screen.jpg");
-  background-size: 477px 1024px;
-  background-position: -80px -809px;
-}
-
-#list-modos {
-  gap: 20px;
-}
-
-.board-turn-players-row {
-  position: absolute;
-  top: 140px;
-  left: 16px;
-  right: 16px;
-  margin: 0;
-  padding: 6px 10px;
-  gap: 16px;
+  position: relative;
+  z-index: 10;
+  margin: 0 auto;
+  width: min(240px, 76vw);
+  height: clamp(54px, 7.5vh, 66px);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: transparent;
-  height: auto;
-  min-height: 96px;
-  max-height: 120px;
-  overflow-x: auto;
-  overflow-y: hidden;
+  background: linear-gradient(180deg, #9b1cf7 0%, #750bb8 100%);
+  color: #ffffff !important;
+  font-family: "Boogaloo", sans-serif;
+  font-size: clamp(1.8rem, 5.5vw, 2.2rem) !important;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  text-align: center;
+  text-transform: uppercase;
+  text-shadow: 0 3px 2px rgba(0, 0, 0, 0.45);
+  border: 3px solid rgba(255, 255, 255, 0.28);
+  border-radius: 20px;
+  box-shadow: 0 6px 0 #4c0777, 0 10px 24px rgba(120, 15, 200, 0.45);
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+
+.btn-empezar:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 0 #4c0777, 0 14px 28px rgba(120, 15, 200, 0.55);
+}
+
+.btn-empezar:active {
+  transform: translateY(3px) scale(0.97) !important;
+  box-shadow: 0 2px 0 #4c0777, 0 6px 14px rgba(120, 15, 200, 0.4);
+}
+
+/* ==========================================================================
+   ANIMACIÓN BURBUJEANTE AMBIENTAL PARA EL FONDO MORADO
+   ========================================================================== */
+.ambient-bubbles-layer {
+  position: fixed;
+  inset: 0;
+  max-width: 480px;
+  margin: 0 auto;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.ambient-bubble {
+  position: absolute;
+  bottom: -60px;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle at 32% 32%, rgba(255, 255, 255, 0.72) 0%, rgba(232, 121, 249, 0.35) 30%, rgba(168, 85, 247, 0.22) 65%, rgba(112, 26, 179, 0.08) 100%);
+  box-shadow: 0 0 12px rgba(216, 180, 254, 0.35), inset 0 0 6px rgba(255, 255, 255, 0.45);
+  animation: bubbleRise linear infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes bubbleRise {
+  0% {
+    transform: translate3d(0, 0, 0) scale(0.85);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.7;
+  }
+  50% {
+    transform: translate3d(var(--drift-mid, 12px), -50vh, 0) scale(1.05);
+    opacity: 0.8;
+  }
+  85% {
+    opacity: 0.65;
+  }
+  100% {
+    transform: translate3d(var(--drift-end, -10px), -108vh, 0) scale(1.15);
+    opacity: 0;
+  }
+}
+
+.ambient-bubble.ab-1  { left: 8%;  width: 14px; height: 14px; animation-duration: 13s; animation-delay: -3s;  --drift-mid: 16px;  --drift-end: -10px; }
+.ambient-bubble.ab-2  { left: 22%; width: 26px; height: 26px; animation-duration: 17s; animation-delay: -9s;  --drift-mid: -18px; --drift-end: 14px;  }
+.ambient-bubble.ab-3  { left: 35%; width: 12px; height: 12px; animation-duration: 11s; animation-delay: -1s;  --drift-mid: 12px;  --drift-end: -14px; }
+.ambient-bubble.ab-4  { left: 48%; width: 38px; height: 38px; animation-duration: 22s; animation-delay: -15s; --drift-mid: -22px; --drift-end: 20px;  }
+.ambient-bubble.ab-5  { left: 62%; width: 18px; height: 18px; animation-duration: 14s; animation-delay: -5s;  --drift-mid: 14px;  --drift-end: -8px;  }
+.ambient-bubble.ab-6  { left: 78%; width: 30px; height: 30px; animation-duration: 19s; animation-delay: -11s; --drift-mid: -16px; --drift-end: 12px;  }
+.ambient-bubble.ab-7  { left: 88%; width: 16px; height: 16px; animation-duration: 12s; animation-delay: -7s;  --drift-mid: 10px;  --drift-end: -16px; }
+.ambient-bubble.ab-8  { left: 14%; width: 34px; height: 34px; animation-duration: 20s; animation-delay: -13s; --drift-mid: 20px;  --drift-end: -18px; }
+.ambient-bubble.ab-9  { left: 28%; width: 10px; height: 10px; animation-duration: 10s; animation-delay: -2s;  --drift-mid: -10px; --drift-end: 12px;  }
+.ambient-bubble.ab-10 { left: 42%; width: 22px; height: 22px; animation-duration: 16s; animation-delay: -8s;  --drift-mid: 15px;  --drift-end: -12px; }
+.ambient-bubble.ab-11 { left: 56%; width: 14px; height: 14px; animation-duration: 12s; animation-delay: -4s;  --drift-mid: -14px; --drift-end: 16px;  }
+.ambient-bubble.ab-12 { left: 70%; width: 42px; height: 42px; animation-duration: 23s; animation-delay: -17s; --drift-mid: 24px;  --drift-end: -20px; }
+.ambient-bubble.ab-13 { left: 82%; width: 20px; height: 20px; animation-duration: 15s; animation-delay: -10s; --drift-mid: -12px; --drift-end: 10px;  }
+.ambient-bubble.ab-14 { left: 93%; width: 12px; height: 12px; animation-duration: 11s; animation-delay: -6s;  --drift-mid: 8px;   --drift-end: -14px; }
+.ambient-bubble.ab-15 { left: 5%;  width: 28px; height: 28px; animation-duration: 18s; animation-delay: -14s; --drift-mid: -18px; --drift-end: 15px;  }
+.ambient-bubble.ab-16 { left: 50%; width: 16px; height: 16px; animation-duration: 13s; animation-delay: -12s; --drift-mid: 16px;  --drift-end: -15px; }
+.ambient-bubble.ab-17 { left: 66%; width: 24px; height: 24px; animation-duration: 17s; animation-delay: -16s; --drift-mid: -20px; --drift-end: 18px;  }
+.ambient-bubble.ab-18 { left: 32%; width: 44px; height: 44px; animation-duration: 25s; animation-delay: -19s; --drift-mid: 22px;  --drift-end: -22px; }
+
+/* ==========================================================================
+   PANTALLA 2: SELECCIÓN DE TABLEROS Y MODOS RESPONSIVA
+   ========================================================================== */
+.tab-navigation {
+  display: flex;
+  justify-content: center;
+  gap: clamp(24px, 8vw, 48px);
+  margin: 0 auto 14px;
+  width: 100%;
+  max-width: 360px;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.18);
+  padding-bottom: 8px;
+  position: relative;
+  z-index: 10;
+}
+
+.nav-tab-item {
+  font-family: "Boogaloo", sans-serif;
+  font-size: clamp(1.4rem, 4.5vw, 1.8rem);
+  color: rgba(255, 255, 255, 0.65);
+  cursor: pointer;
+  position: relative;
+  transition: color 0.2s ease;
+}
+
+.nav-tab-item.active {
+  color: #ffffff;
+}
+
+.nav-tab-item.active::after {
+  content: "";
+  position: absolute;
+  bottom: -10px;
+  left: 0;
+  right: 0;
+  height: 3.5px;
+  background: #ffffff;
+  border-radius: 2px;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
+}
+
+.cards-selection-list {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(14px, 3vh, 22px);
+  width: 100%;
+  max-width: 360px;
+  margin: 0 auto;
+  padding: 8px 12px max(28px, env(safe-area-inset-bottom, 28px));
+  overflow-y: auto;
+  flex: 1 1 auto;
+  -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   -ms-overflow-style: none;
-  z-index: 10;
+}
+
+.games-capsules-scroll-list::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.game-capsule-btn {
+  width: 100%;
+  max-width: 310px;
+  aspect-ratio: 307 / 114;
+  height: auto;
+  min-height: 76px;
+  border: none;
+  border-radius: 22px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: transparent;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  transition: transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+}
+
+.capsule-title-text {
+  font-family: "Boogaloo", sans-serif;
+  font-size: clamp(1.8rem, 5.5vw, 2.5rem);
+  font-weight: 900;
+  line-height: 0.98;
+  text-align: center;
+  color: #ffffff;
+  text-shadow: 0 4px 1px #35263b, 0 1px 0 #35263b;
+  -webkit-text-stroke: 0.35px #fff;
+}
+
+/* ==========================================================================
+   PANTALLA 3: TABLERO EN ESPIRAL RESPONSIVO Y PROPORCIONAL
+   ========================================================================== */
+#screen-board-game {
+  background-color: #f3eeff;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: none;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  padding: 0 0 max(12px, env(safe-area-inset-bottom, 12px));
+}
+
+#screen-board-game.active {
+  display: flex;
+}
+
+.board-turn-players-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: clamp(6px, 2vw, 12px);
+  overflow-x: auto;
+  padding: 4px 12px;
+  width: 100%;
+  max-width: 440px;
+  margin: 0 auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
 }
 
 .board-turn-players-row::-webkit-scrollbar {
   display: none;
-  width: 0;
-  height: 0;
 }
 
 .turn-player-orb-box {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-  opacity: 0.55;
-  transition: transform 0.25s ease, opacity 0.25s ease;
-}
-
-.turn-player-orb-box.current-turn-active {
-  opacity: 1;
-  transform: scale(1.1);
+  gap: 3px;
+  min-width: clamp(52px, 14vw, 68px);
 }
 
 .turn-orb-token {
-  width: 58px;
-  height: 58px;
+  width: clamp(48px, 13vw, 62px);
+  height: clamp(48px, 13vw, 62px);
   border-radius: 50%;
-  padding: 3px;
-  display: grid;
-  place-items: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-  box-sizing: border-box;
+  padding: 4px;
+  position: relative;
+  transition: transform 0.2s ease;
 }
 
 .turn-orb-face {
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  background: #ffffff;
-  border: 0;
-  display: grid;
-  place-items: center;
-  font-size: 28px;
-  line-height: 1;
-  user-select: none;
+  background: url("assets/original/player-smiley.png") center / cover no-repeat;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.turn-orb-face.avatar-emoji {
+  background: none;
+  font-size: clamp(24px, 7vw, 32px);
 }
 
 .turn-player-label {
-  margin-top: 4px;
-  font-size: 19px;
-  font-weight: 700;
+  font-family: "Boogaloo", sans-serif;
+  font-size: clamp(14px, 3.8vw, 18px);
   color: #3b0764;
-  text-align: center;
-  max-width: 80px;
-  white-space: nowrap;
+  font-weight: 700;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
-  letter-spacing: 0.3px;
-}
-
-#screen-board-game {
-  background: #f3eeff url("assets/board_game.jpg") 0 0 / 477px 1024px no-repeat;
+  white-space: nowrap;
 }
 
 .spiral-board-frame {
-  position: absolute;
-  top: 291px;
-  left: 33px;
-  width: 411px;
-  height: 486px;
-  max-width: none;
-  aspect-ratio: auto;
+  position: relative;
+  width: min(92vw, 400px);
+  aspect-ratio: 411 / 486;
+  margin: auto auto;
+  display: grid;
   grid-template-columns: repeat(9, 1fr);
   grid-template-rows: repeat(8, 1fr);
   gap: 0;
   padding: 0;
-  border: 0;
-  border-radius: 0;
+  border: none;
   background: transparent;
-  box-shadow: none;
-  overflow: visible;
+  isolation: isolate;
+  z-index: 5;
+}
+
+.spiral-board-frame::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: -6.5%;
+  left: -6.8%;
+  width: 113.6%;
+  height: 114.4%;
+  background: url("assets/original/board-classic.png") center / 100% 100% no-repeat;
+  pointer-events: none;
+}
+
+.spiral-board-frame[data-game="hammered"]::before {
+  background-image: url("assets/original/board-etilico.png");
+}
+
+.spiral-board-frame[data-game="hot"]::before {
+  background-image: url("assets/original/board-hot.png");
+}
+
+.spiral-board-frame[data-game="couple"]::before {
+  background-image: url("assets/original/board-pareja.png");
+}
+
+.spiral-board-frame[data-game="flash"] {
+  aspect-ratio: 396 / 462;
+  grid-template-columns: repeat(6, 1fr) !important;
+  grid-template-rows: repeat(7, 1fr) !important;
+}
+
+.spiral-board-frame[data-game="flash"]::before {
+  top: -8.2%;
+  left: -7.1%;
+  width: 114.1%;
+  height: 116.4%;
+  background-image: url("assets/original/board-flash.png");
+}
+
+.spiral-board-frame[data-game="xxl"] {
+  aspect-ratio: 411 / 536;
+  grid-template-rows: repeat(9, 1fr) !important;
+}
+
+.spiral-board-frame[data-game="xxl"]::before {
+  top: -6.3%;
+  left: -6.8%;
+  width: 113.6%;
+  height: 113.4%;
+  background-image: url("assets/original/board-xxl.png");
 }
 
 .spiral-cell {
-  border: 0;
-  border-radius: 0;
-  background: transparent !important;
-}
-
-.cell-num {
-  top: auto;
-  right: 5px;
-  bottom: 4px;
-  left: auto;
-  font-size: 23px;
-  font-weight: 400;
-  color: transparent;
-  text-shadow: none;
-}
-
-/* Fichas de los Jugadores en Casillas (Con soporte multi-jugador) */
-.cell-pucks-wrapper {
-  position: absolute;
-  inset: 0;
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-wrap: wrap;
-  gap: 2px;
-  padding: 2px;
-  pointer-events: none;
-  z-index: 10;
+  border: none;
+  background: transparent !important;
 }
 
+.spiral-cell .cell-num,
+.spiral-cell .start-text-label,
+.spiral-cell .end-text-label {
+  visibility: hidden;
+}
+
+/* Ficha del jugador en el tablero */
 .cell-puck {
+  position: absolute;
+  width: clamp(26px, 7vw, 36px);
+  height: clamp(26px, 7vw, 36px);
   border-radius: 50%;
+  border: 3px solid;
   background: #ffffff;
-  border: 3px solid currentColor;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4);
-  display: grid;
-  place-items: center;
-  font-family: "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
-  line-height: 1;
-  user-select: none;
-  transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  box-sizing: border-box;
-}
-
-.cell-puck.puck-size-1 {
-  width: 32px;
-  height: 32px;
-  font-size: 18px;
-}
-
-.cell-puck.puck-size-2 {
-  width: 22px;
-  height: 22px;
-  font-size: 13px;
-  border-width: 2px;
-}
-
-.cell-puck.puck-size-multi {
-  width: 17px;
-  height: 17px;
-  font-size: 10px;
-  border-width: 1.5px;
-}
-
-.cell-puck.puck-active-turn {
-  z-index: 15;
-  box-shadow: 0 0 10px rgba(244, 63, 94, 0.9), 0 3px 8px rgba(0, 0, 0, 0.5);
-  animation: activePuckPulse 1.4s infinite ease-in-out;
-}
-
-@keyframes activePuckPulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.15) translateY(-2px); }
-}
-
-.spiral-cell.tile-start {
-  grid-column: 1 / span 3;
-  grid-row: 8;
-  background: transparent !important;
-  border: 0;
-}
-
-.spiral-cell.tile-end {
-  grid-column: 4 / span 3;
-  grid-row: 4 / span 2;
-  border-radius: 0;
-  border: 0;
-  background: transparent !important;
-  box-shadow: none;
-}
-
-.end-text-label {
-  color: transparent;
-  text-shadow: none;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(16px, 4.5vw, 22px);
+  z-index: 10;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .in-game-bottom-bar {
-  position: absolute;
-  bottom: 28px;
-  left: 0;
-  right: 0;
-  margin: 0;
   display: flex;
-  align-items: center;
   justify-content: center;
-  z-index: 20;
+  align-items: center;
+  width: 100%;
+  padding: 8px 16px max(14px, env(safe-area-inset-bottom, 14px));
+  margin-top: auto;
+  z-index: 10;
 }
 
-.in-game-bottom-bar > div:not(.official-white-die) {
-  display: none;
+.official-white-die {
+  width: clamp(74px, 18vw, 86px);
+  height: clamp(74px, 18vw, 86px);
+  background: #ffffff;
+  border-radius: 18px;
+  border: 3px solid #f1f5f9;
+  box-shadow: 0 8px 0 #cbd5e1, 0 14px 28px rgba(0, 0, 0, 0.28);
+  cursor: pointer;
+  position: relative;
+  display: grid;
+  padding: 10px;
+  transition: transform 0.15s ease;
 }
+
+.official-white-die:active {
+  transform: translateY(4px) scale(0.96);
+  box-shadow: 0 4px 0 #cbd5e1, 0 8px 16px rgba(0, 0, 0, 0.22);
+}
+
+
 
 .btn-modal-action {
   flex: 1;
@@ -1760,29 +1825,10 @@ body {
 
 .avatar-inner-face,
 .turn-orb-face {
-  background: url("assets/original/player-smiley.png") center / 100% 100% no-repeat;
+  background: transparent;
 }
 
-.cell-puck {
-  background: url("assets/original/player-smiley.png") center / 100% 100% no-repeat;
-}
-
-.goose-mascot-box {
-  left: -8px;
-  width: 310px;
-  height: 285px;
-  background: url("assets/original/goose-beer.png") left top / 310px auto no-repeat;
-}
-
-.btn-empezar {
-  display: grid;
-  place-items: center;
-  border-radius: 0;
-  background: url("assets/players_screen.jpg") -260px -745px / 477px 1024px no-repeat;
-  color: transparent;
-  font-size: 0;
-  text-shadow: none;
-}
+/* Mascot & button styled via primary responsive rules */
 
 .game-capsule-btn {
   position: relative;
@@ -2074,7 +2120,7 @@ body {
 
 .mode-game-player { min-width: 0; width: 19%; text-align: center; }
 .mode-game-player .turn-orb-token { width: 66px; height: 66px; margin: 0 auto; padding: 5px; }
-.mode-game-player .turn-orb-face { width: 100%; height: 100%; border-radius: 50%; background: url("assets/original/player-smiley.png") center / cover no-repeat; font-size: 0; }
+.mode-game-player .turn-orb-face { width: 100%; height: 100%; border-radius: 50%; background: transparent; display: grid; place-items: center; font: 400 28px/1 "Apple Color Emoji", "Segoe UI Emoji", sans-serif; }
 .mode-game-player .turn-player-label { display: block; color: #fff; font: 400 21px/1 "Boogaloo", sans-serif; text-shadow: 0 3px 1px rgba(0, 0, 0, .65); overflow: hidden; text-overflow: ellipsis; }
 
 .mode-game-prompt {
@@ -2140,19 +2186,35 @@ body {
   background: #f4e2ed url("assets/original/background-pareja.png") center / 100% 100% no-repeat;
 }
 
+/* ==========================================================================
+   TABLEROS DE JUEGO (6 MODALIDADES) ADAPTABLES Y PROPORCIONALES
+   Escalado porcentual perfecto sin overflow horizontal
+   ========================================================================== */
+
 .spiral-board-frame {
-  isolation: isolate;
+  position: relative;
+  width: min(92vw, 400px);
+  aspect-ratio: 411 / 486;
+  margin: auto auto;
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  grid-template-rows: repeat(8, 1fr);
+  gap: 0;
+  padding: 0;
+  border: none;
   background: transparent;
+  isolation: isolate;
+  z-index: 5;
 }
 
 .spiral-board-frame::before {
   content: "";
   position: absolute;
   z-index: -1;
-  top: -36px;
-  left: -28px;
-  width: 467px;
-  height: 556px;
+  top: -6.5%;
+  left: -6.8%;
+  width: 113.6%;
+  height: 114.4%;
   background: url("assets/original/board-classic.png") center / 100% 100% no-repeat;
   pointer-events: none;
 }
@@ -2167,6 +2229,40 @@ body {
 
 .spiral-board-frame[data-game="couple"]::before {
   background-image: url("assets/original/board-pareja.png");
+}
+
+.spiral-board-frame[data-game="flash"] {
+  aspect-ratio: 396 / 462;
+  grid-template-columns: repeat(6, 1fr) !important;
+  grid-template-rows: repeat(7, 1fr) !important;
+  left: auto;
+  top: auto;
+  width: min(90vw, 396px);
+}
+
+.spiral-board-frame[data-game="flash"]::before {
+  top: -8.2%;
+  left: -7.1%;
+  width: 114.1%;
+  height: 116.4%;
+  background-image: url("assets/original/board-flash.png");
+}
+
+.spiral-board-frame[data-game="xxl"] {
+  aspect-ratio: 411 / 536;
+  grid-template-columns: repeat(9, 1fr) !important;
+  grid-template-rows: repeat(10, 1fr) !important;
+  left: auto;
+  top: auto;
+  width: min(92vw, 400px);
+}
+
+.spiral-board-frame[data-game="xxl"]::before {
+  top: -6.3%;
+  left: -6.8%;
+  width: 113.6%;
+  height: 113.4%;
+  background-image: url("assets/original/board-xxl.png");
 }
 
 .spiral-cell.tile-start,
@@ -2184,98 +2280,21 @@ body {
   background: #ffffff;
 }
 
-/* The APK decorates its purple screens with small floating bubbles. */
-#screen-players {
-  background-color: #440d68;
-  background-image:
-    radial-gradient(circle at 8.4% 3.3%, #d18af0 0 3px, #a43bd0 4px 11px, #6d168e 12px 14px, transparent 15px),
-    radial-gradient(circle at 84.5% 12.3%, #d18af0 0 2px, #a43bd0 3px 8px, transparent 9px),
-    radial-gradient(circle at 88.7% 36.4%, #b648dc 0 6px, transparent 7px),
-    radial-gradient(circle at 16.8% 38%, #a72bd1 0 6px, transparent 7px),
-    radial-gradient(circle at 96% 47%, #a72bd1 0 7px, transparent 8px),
-    radial-gradient(circle at 56% 58.5%, #a72bd1 0 7px, transparent 8px),
-    radial-gradient(circle at 42.7% 62.7%, #a72bd1 0 8px, transparent 9px),
-    radial-gradient(circle at 36.5% 78.8%, #a72bd1 0 6px, transparent 7px),
-    radial-gradient(circle at 77% 99.3%, #a72bd1 0 8px, transparent 9px);
-}
-
+#screen-players,
 #screen-choose-game {
-  background-color: #440d68;
-  background-image:
-    radial-gradient(circle at 97.5% 19.3%, #a72bd1 0 7px, transparent 8px),
-    radial-gradient(circle at 22% 33.8%, #b648dc 0 8px, transparent 9px),
-    radial-gradient(circle at 24% 78.5%, #a72bd1 0 9px, transparent 10px),
-    radial-gradient(circle at 5% 93%, #a72bd1 0 8px, transparent 9px);
+  background-color: var(--bg-purple);
 }
 
-.header-btn.settings-btn.is-muted {
-  opacity: 0.55;
-}
-
-#screen-choose-game .btn-tod .capsule-title-text {
-  font-size: 42px;
-}
-
-#screen-choose-game .btn-mlt .capsule-title-text {
-  font-size: 39px;
-}
-
-#screen-choose-game .btn-versus .capsule-title-text {
-  font-size: 58px;
-}
-
-#screen-board-game[data-game="flash"] {
-  background: #eee5f2 url("assets/original/background-flash.png") center / 100% 100% no-repeat;
-}
-
-#screen-board-game[data-game="xxl"] {
-  background: #f2e6ee url("assets/original/background-xxl.png") center / 100% 100% no-repeat;
-}
-
-.spiral-board-frame[data-game="flash"] {
-  width: 396px;
-  height: 462px;
-  left: 40px;
-  top: 300px;
-  grid-template-columns: repeat(6, 1fr) !important;
-  grid-template-rows: repeat(7, 1fr) !important;
-}
-
-.spiral-board-frame[data-game="flash"]::before {
-  top: -38px;
-  left: -28px;
-  width: 452px;
-  height: 538px;
-  background-image: url("assets/original/board-flash.png");
-}
-
-.spiral-board-frame[data-game="xxl"] {
-  top: 255px;
-  height: 540px;
-  grid-template-columns: repeat(9, 1fr) !important;
-  grid-template-rows: repeat(10, 1fr) !important;
-}
-
-.spiral-board-frame[data-game="xxl"]::before {
-  top: -34px;
-  left: -28px;
-  width: 467px;
-  height: 608px;
-  background-image: url("assets/original/board-xxl.png");
-}
-
-.goose-mascot-box {
-  width: 400px;
-  background-position: -20px 20px;
-  background-size: 350px auto;
-}
+/* Mascot responsive */
 
 /* New-player avatar carousel, matching the APK's large cover picker. */
 .player-create-sheet {
   position: relative;
   width: min(420px, 100%);
-  padding: 48px 28px 30px;
-  border: 6px solid #fff;
+  max-width: calc(100vw - 20px);
+  box-sizing: border-box;
+  padding: clamp(32px, 5vh, 48px) clamp(16px, 4vw, 28px) clamp(20px, 4vh, 30px);
+  border: clamp(4px, 1.2vw, 6px) solid #fff;
   border-radius: 42px 42px 52px 52px;
   background: #440d68;
   box-shadow: 0 5px 0 rgba(17, 8, 34, .5);
@@ -2283,16 +2302,18 @@ body {
 
 .player-create-close {
   position: absolute;
-  top: -18px;
-  right: -17px;
-  width: 48px;
-  height: 48px;
+  top: -12px;
+  right: -8px;
+  width: 44px;
+  height: 44px;
   border: 0;
   border-radius: 50%;
   background: #fff;
   color: #111;
-  font: 900 38px/1 Arial, sans-serif;
+  font: 900 34px/1 Arial, sans-serif;
   cursor: pointer;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, .35);
+  z-index: 5;
 }
 
 .player-create-sheet .modal-sheet-title {
@@ -2303,17 +2324,17 @@ body {
 
 .player-avatar-picker {
   width: 100%;
-  margin: 0 0 24px;
+  margin: 0 0 20px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+  justify-content: center;
+  gap: clamp(4px, 2vw, 12px);
 }
 
 .player-avatar-preview-rim {
-  width: min(230px, 62vw);
-  height: min(230px, 62vw);
-  flex: none;
+  width: clamp(140px, 46vw, 210px);
+  height: clamp(140px, 46vw, 210px);
+  flex: 0 0 auto;
   display: grid;
   place-items: center;
   border-radius: 50%;
@@ -2326,27 +2347,26 @@ body {
   height: 72%;
   display: grid;
   place-items: center;
-  border: 8px solid #fff;
+  border: clamp(5px, 1.8vw, 8px) solid #fff;
   border-radius: 50%;
   background: #facc15;
   box-shadow: 0 3px 6px rgba(0, 0, 0, .35);
-  font: 400 90px/1 "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
+  font: 400 clamp(54px, 16vw, 86px)/1 "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
 }
 
 .player-avatar-preview[data-avatar="smile"] {
-  background: url("assets/original/player-smiley.png") center / contain no-repeat;
-  font-size: 0;
+  background: transparent;
 }
 
 .player-avatar-arrow {
-  width: 42px;
+  width: clamp(30px, 8vw, 42px);
   height: 62px;
-  flex: none;
+  flex: 0 0 auto;
   padding: 0;
   border: 0;
   background: transparent;
   color: #fff;
-  font: 900 72px/.8 Arial, sans-serif;
+  font: 900 clamp(48px, 12vw, 72px)/.8 Arial, sans-serif;
   cursor: pointer;
   text-shadow: 0 3px 1px rgba(0, 0, 0, .45);
 }
@@ -2386,13 +2406,18 @@ body {
    CACHE & SESSION RESTORE UI (Toast & Resume Banner)
 =================================================== */
 .resume-game-banner {
-  position: absolute;
-  top: 250px;
-  left: 20px;
-  right: 20px;
-  z-index: 80;
+  position: relative;
+  top: auto;
+  left: auto;
+  right: auto;
+  z-index: 25;
   display: flex;
   justify-content: center;
+  width: 100%;
+  max-width: 380px;
+  margin: 0 auto 16px;
+  padding: 0 6px;
+  flex: none;
 }
 
 .btn-resume-game {
@@ -3049,6 +3074,7 @@ body.is-standalone .pwa-invite-banner {
   .official-white-die.die-landing,
   .cell-puck.puck-hopping,
   .btn-empezar::after,
+  .ambient-bubble,
   .player-card-circle,
   .modal-card-overlay.open .card-scene-container,
   .turn-player-orb-box.current-turn-active .turn-orb-token {
@@ -3056,7 +3082,8 @@ body.is-standalone .pwa-invite-banner {
     transition: none !important;
   }
   .ambient-fx-canvas,
-  .celebration-fx-canvas {
+  .celebration-fx-canvas,
+  .ambient-bubbles-layer {
     display: none !important;
   }
 }
