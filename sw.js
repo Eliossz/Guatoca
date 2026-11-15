@@ -3,7 +3,7 @@
 // Estrategia de caché segura, arranque sin conexión y actualización controlada
 // ==========================================================================
 
-const CACHE_NAME = 'guatoca-v1.1.0-responsive';
+const CACHE_NAME = 'guatoca-v1.3.0-layout';
 
 // Recursos críticos y assets esenciales para juego completo offline
 const PRECACHE_ASSETS = [

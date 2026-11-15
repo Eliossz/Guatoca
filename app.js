@@ -192,6 +192,8 @@ const STATE = {
   isGameActive: false,
   activeScreen: 'screen-players',
   activeCard: null,
+  winnerId: null,
+  modePrompt: "",
   round: 1,
   cardsByMode: {},
   allCards: [],
@@ -222,7 +224,8 @@ function saveGameState() {
       players: STATE.players || [],
       usedCardTexts: Array.from(STATE.usedCardTexts || []),
       usedModeCardTexts: Array.from(STATE.usedModeCardTexts || []),
-      activeModeChoice: STATE.activeModeChoice || null
+      activeModeChoice: STATE.activeModeChoice || null,
+      activeCard: STATE.activeCard, winnerId: STATE.winnerId, modePrompt: STATE.modePrompt
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
   } catch (err) {
@@ -294,6 +297,10 @@ function restoreGameState() {
   if (Array.isArray(saved.usedModeCardTexts)) STATE.usedModeCardTexts = new Set(saved.usedModeCardTexts);
   if (saved.activeModeChoice) STATE.activeModeChoice = saved.activeModeChoice;
   STATE.isGameActive = !!saved.isGameActive;
+  STATE.activeCard = saved.activeCard || null;
+  STATE.winnerId = saved.winnerId ?? null;
+  STATE.modePrompt = saved.modePrompt || "";
+  if (STATE.winnerId !== null && STATE.players.some(p => p.id === STATE.winnerId)) { startBoardGame(true); return true; }
 
   // Restaurar pantalla si había una partida activa en el tablero
   if (STATE.isGameActive && saved.activeScreen === 'screen-board-game' && STATE.players.length >= 2) {
@@ -320,38 +327,23 @@ function restoreGameState() {
 
 function restoreModeGame(modeKey) {
   closeModePreview();
-  const screen = document.getElementById('screen-mode-game');
-  if (screen) screen.dataset.game = modeKey;
+  document.getElementById('screen-mode-game').dataset.game = modeKey;
   document.getElementById('mode-game-title').textContent = MODE_DETAILS[modeKey]?.title || '';
   renderModePlayers();
-  renderModeActions(modeKey === 'tod');
-  if (modeKey !== 'tod') {
-    const prompt = document.getElementById('mode-game-prompt');
-    if (prompt && !prompt.textContent) {
-      prompt.textContent = getModePrompt(modeKey);
-    }
-  }
+  renderModeActions(modeKey === 'tod' && !STATE.activeModeChoice);
+  document.getElementById('mode-game-prompt').textContent = STATE.modePrompt;
   showScreen('screen-mode-game');
 }
 
 function resetBoardGame() {
-  STATE.players.forEach(p => {
-    p.position = 0;
-    p.drinks = 0;
-    p.completed = 0;
-  });
-  STATE.currentTurnIndex = 0;
-  STATE.round = 1;
-  STATE.usedCardTexts.clear();
-  STATE.isGameActive = true;
-
-  renderTurnPlayersHeader();
-  renderSpiralBoard();
-  setDieFace(1);
-  saveGameState();
+  if (STATE.isRolling || STATE.isMoving || STATE.activeCard) return;
+  startBoardGame(false);
   sound.playStep();
-  showToast('🔄 Partida reiniciada desde la casilla 0');
 }
+
+// ==========================================================================
+// MOTOR DE AMBIENTES DINÁMICOS Y ANIMACIONES VISUALES PREMIUM (GUATOCA FX)
+// ==========================================================================
 
 const MODE_DETAILS = {
   nhie: {
@@ -517,9 +509,6 @@ class SoundEngine {
   }
 }
 
-// ==========================================================================
-// MOTOR DE AMBIENTES DINÁMICOS Y ANIMACIONES VISUALES PREMIUM (GUATOCA FX)
-// ==========================================================================
 
 class AmbientFXEngine {
   constructor(canvasId) {
@@ -854,7 +843,7 @@ function loadCardsDatabase() {
   if (window.GUATOCA_DATA) {
     STATE.cardsByMode = window.GUATOCA_DATA.byMode || {};
     STATE.allCards = window.GUATOCA_DATA.allCards || [];
-    console.log('✅ Base de datos cargada: 1,073 retos listos.');
+    console.log(`Base de datos cargada: ${STATE.allCards.length} retos listos.`);
   }
 }
 
@@ -867,7 +856,7 @@ function setupEventListeners() {
       if (celebrationFX) {
         celebrationFX.burst(null, null, ['#8b5cf6', '#ec4899', '#38bdf8', '#ffd24c'], 24);
       }
-      startBoardGame(true);
+      if (BOARD_DETAILS[STATE.selectedGameKey]) startBoardGame(true); else restoreModeGame(STATE.selectedGameKey);
     });
   }
 
@@ -875,6 +864,7 @@ function setupEventListeners() {
   const resetBtn = document.getElementById('btn-reset-board-game');
   if (resetBtn) {
     resetBtn.addEventListener('click', () => {
+      if (STATE.isRolling || STATE.isMoving || STATE.activeCard) return;
       if (confirm('¿Deseas reiniciar la partida? Las posiciones de todos los jugadores volverán a la casilla 0.')) {
         resetBoardGame();
       }
@@ -882,15 +872,18 @@ function setupEventListeners() {
   }
 
   // Botón Sonido
-  const soundBtn = document.getElementById('btn-sound-toggle');
-  if (soundBtn) {
-    soundBtn.addEventListener('click', () => {
+  document.querySelectorAll('[data-action="toggle-sound"]').forEach(button => {
+    button.addEventListener('click', () => {
       const on = sound.toggle();
-      soundBtn.setAttribute('aria-pressed', String(on));
-      soundBtn.classList.toggle('is-muted', !on);
-      soundBtn.title = on ? 'Desactivar sonido' : 'Activar sonido';
+      document.querySelectorAll('[data-action="toggle-sound"]').forEach(control => {
+        control.setAttribute('aria-pressed', String(on));
+        control.classList.toggle('is-muted', !on);
+        control.title = on ? 'Desactivar sonido' : 'Activar sonido';
+        control.setAttribute('aria-label', control.title);
+      });
     });
-  }
+  });
+  document.querySelector('.lang-btn')?.addEventListener('click', () => showToast('Idioma: español (Colombia).'));
 
   // Botón EMPEZAR en pantalla de jugadores (Captura 3 -> Captura 2)
   const empezarBtn = document.getElementById('btn-empezar-lobby');
@@ -918,6 +911,7 @@ function setupEventListeners() {
   const backToChooseBtn = document.getElementById('btn-back-to-choose');
   if (backToChooseBtn) {
     backToChooseBtn.addEventListener('click', () => {
+      if (STATE.isRolling || STATE.isMoving || STATE.activeCard) return;
       if (confirm('¿Deseas volver a la selección de tableros?')) {
         sound.playStep();
         showScreen('screen-choose-game');
@@ -926,36 +920,13 @@ function setupEventListeners() {
   }
 
   // Pestañas TABLEROS vs MODOS (Captura 2 vs Captura 5)
-  const tabTableros = document.getElementById('tab-tableros');
-  const tabModos = document.getElementById('tab-modos');
-  const listTableros = document.getElementById('list-tableros');
-  const listModos = document.getElementById('list-modos');
-
-  if (tabTableros && tabModos) {
-    tabTableros.addEventListener('click', () => {
-      tabTableros.classList.add('active');
-      tabModos.classList.remove('active');
-      listTableros.style.display = 'flex';
-      listModos.style.display = 'none';
-      STATE.selectedTab = 'tableros';
-      sound.playStep();
-    });
-
-    tabModos.addEventListener('click', () => {
-      tabModos.classList.add('active');
-      tabTableros.classList.remove('active');
-      listTableros.style.display = 'none';
-      listModos.style.display = 'flex';
-      STATE.selectedTab = 'modos';
-      sound.playStep();
-    });
-  }
+  document.getElementById('tab-tableros')?.addEventListener('click', () => { selectGameTab('tableros'); sound.playStep(); saveGameState(); });
+  document.getElementById('tab-modos')?.addEventListener('click', () => { selectGameTab('modos'); sound.playStep(); saveGameState(); });
 
   // Tanto tableros como modos muestran su ficha antes de jugar.
   document.querySelectorAll('.game-capsule-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const gameKey = btn.dataset.game;
-      STATE.selectedGameKey = gameKey;
       openGamePreview(gameKey);
     });
   });
@@ -1043,6 +1014,16 @@ function setupEventListeners() {
     if (input) input.addEventListener('keydown', (e) => { if (e.key === 'Enter') confirmAdd(); });
   }
 
+  document.getElementById('btn-rematch')?.addEventListener('click', () => leavePodium('rematch'));
+  document.getElementById('btn-change-board')?.addEventListener('click', () => leavePodium('choose'));
+  document.getElementById('btn-podium-lobby')?.addEventListener('click', () => leavePodium('lobby'));
+  document.getElementById('modal-game-over')?.addEventListener('keydown', event => {
+    if (event.key !== 'Tab') return;
+    const buttons = Array.from(document.querySelectorAll('#modal-game-over button'));
+    const index = buttons.indexOf(document.activeElement);
+    event.preventDefault();
+    buttons[(index + (event.shiftKey ? -1 : 1) + buttons.length) % buttons.length]?.focus();
+  });
   // Tirar el Dado Blanco (Captura 4)
   const die = document.getElementById('official-die');
   if (die) die.addEventListener('click', rollOfficialDie);
@@ -1083,7 +1064,18 @@ function renderSelectedPlayerAvatar() {
   if (rim) rim.dataset.avatar = avatar.id;
 }
 
+function selectGameTab(tab) {
+  STATE.selectedTab = tab === 'modos' ? 'modos' : 'tableros';
+  for (const key of ['tableros', 'modos']) {
+    const active = key === STATE.selectedTab;
+    document.getElementById('tab-' + key)?.classList.toggle('active', active);
+    const list = document.getElementById('list-' + key);
+    if (list) list.style.display = active ? 'flex' : 'none';
+  }
+}
+
 function showScreen(screenId) {
+  if (screenId === 'screen-choose-game') selectGameTab(STATE.selectedTab);
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   const target = document.getElementById(screenId);
   if (target) target.classList.add('active');
@@ -1098,6 +1090,7 @@ function showScreen(screenId) {
     document.body.classList.remove('in-game-board');
   }
 
+  if (screenId === 'screen-mode-game') hidePwaInviteBanner(false);
   STATE.activeScreen = screenId;
   if (ambientFX) {
     if (screenId === 'screen-board-game') {
@@ -1138,7 +1131,8 @@ function closeModePreview() {
 
 
 function startSelectedMode() {
-  const modeKey = STATE.selectedGameKey;
+  const modeKey = document.getElementById('mode-preview-sheet').dataset.game || STATE.selectedGameKey;
+  STATE.selectedGameKey = modeKey;
   closeModePreview();
   if (BOARD_DETAILS[modeKey]) {
     sound.playFanfare();
@@ -1146,6 +1140,9 @@ function startSelectedMode() {
     return;
   }
   STATE.isGameActive = true;
+  STATE.winnerId = null;
+  STATE.currentTurnIndex = 0;
+  STATE.round = 1;
   STATE.usedModeCardTexts.clear();
   STATE.activeModeChoice = null;
   const screen = document.getElementById('screen-mode-game');
@@ -1153,7 +1150,8 @@ function startSelectedMode() {
   document.getElementById('mode-game-title').textContent = MODE_DETAILS[modeKey]?.title || '';
   renderModePlayers();
   renderModeActions(modeKey === 'tod');
-  document.getElementById('mode-game-prompt').textContent = modeKey === 'tod' ? '' : getModePrompt(modeKey);
+  STATE.modePrompt = modeKey === 'tod' ? '' : getModePrompt(modeKey);
+  document.getElementById('mode-game-prompt').textContent = STATE.modePrompt;
   showScreen('screen-mode-game');
   sound.playCard();
   saveGameState();
@@ -1165,7 +1163,7 @@ function renderModePlayers() {
   row.innerHTML = '';
   STATE.players.forEach((player) => {
     const item = document.createElement('div');
-    item.className = 'mode-game-player';
+    item.className = 'mode-game-player' + (player === STATE.players[STATE.currentTurnIndex] ? ' current-turn-active' : '');
     item.innerHTML = `<div class="turn-orb-token" style="background:${player.ringColor}">${avatarMarkup(player, 'turn-orb-face')}</div><span class="turn-player-label">${escapeHtml(player.name)}</span>`;
     row.appendChild(item);
   });
@@ -1195,21 +1193,26 @@ function getModePrompt(modeKey, choice = null) {
   }
   const prompt = available[Math.floor(Math.random() * available.length)] || '';
   if (prompt) STATE.usedModeCardTexts.add(prompt);
-  return prompt;
+  const player = STATE.players[STATE.currentTurnIndex];
+  const others = STATE.players.filter(p => p.id !== player?.id);
+  const other = others[Math.floor(Math.random() * others.length)];
+  return prompt.replace(/\{turn\}/g, player?.name || '').replace(/\{otherPlayer\}/g, other?.name || 'Alguien');
 }
 
 function showNextModePrompt(choice) {
+  if (!STATE.isGameActive || !STATE.players.length) return;
   const modeKey = STATE.selectedGameKey;
-  if (modeKey === 'tod') {
-    if (['truth', 'dare'].includes(choice)) STATE.activeModeChoice = choice;
-    if (!STATE.activeModeChoice) return;
-    choice = STATE.activeModeChoice;
+  if (modeKey === 'tod' && ['truth', 'dare'].includes(choice)) STATE.activeModeChoice = choice;
+  else {
+    STATE.currentTurnIndex = (STATE.currentTurnIndex + 1) % STATE.players.length;
+    if (STATE.currentTurnIndex === 0) STATE.round++;
+    STATE.activeModeChoice = null;
   }
-  const prompt = document.getElementById('mode-game-prompt');
-  if (prompt) prompt.textContent = getModePrompt(modeKey, choice);
-  if (modeKey === 'tod') renderModeActions(false);
-  sound.playStep();
-  saveGameState();
+  STATE.modePrompt = modeKey === 'tod' && !STATE.activeModeChoice ? '' : getModePrompt(modeKey, STATE.activeModeChoice);
+  document.getElementById('mode-game-prompt').textContent = STATE.modePrompt;
+  renderModePlayers();
+  renderModeActions(modeKey === 'tod' && !STATE.activeModeChoice);
+  sound.playStep(); haptic(); saveGameState();
 }
 
 // ==========================================================================
@@ -1257,7 +1260,11 @@ function renderPlayersScreen() {
 // PANTALLA 3: EL TABLERO EN ESPIRAL (CAPTURA 4)
 // ==========================================================================
 function startBoardGame(isRestoring = false) {
+  if (STATE.isRolling || STATE.isMoving) return;
   if (!isRestoring) {
+    STATE.winnerId = null;
+    STATE.activeCard = null;
+    currentCardState = "NONE";
     STATE.players.forEach(p => {
       p.position = 0;
       p.drinks = 0;
@@ -1279,6 +1286,10 @@ function startBoardGame(isRestoring = false) {
   renderTurnPlayersHeader();
   renderSpiralBoard();
   setDieFace(1);
+  document.getElementById('official-die').disabled = false;
+  const winner = STATE.players.find(p => p.position >= getBoardConfig(STATE.selectedGameKey).maxTile);
+  if (winner) finishBoardGame(winner);
+  else if (STATE.activeCard) showCardChallenge(STATE.activeCard);
   saveGameState();
 }
 
@@ -1334,7 +1345,7 @@ function renderSpiralBoard() {
     cell.innerHTML = `<span class="cell-num">${c.num}</span>`;
 
     // Dibujar a TODOS los jugadores que estén en esta casilla
-    const playersHere = STATE.players.filter(p => p.position === c.num);
+    const playersHere = STATE.players.filter(p => p.position === c.num && p.position < boardConfig.maxTile);
     if (playersHere.length > 0) {
       cell.appendChild(createPucksWrapper(playersHere));
     }
@@ -1382,8 +1393,9 @@ function createPucksWrapper(players) {
 // TIRADA DE DADO (CAPTURA 4)
 // ==========================================================================
 function rollOfficialDie() {
-  if (STATE.isRolling || STATE.isMoving) return;
+  if (!STATE.isGameActive || STATE.activeScreen !== "screen-board-game" || STATE.activeCard || STATE.isRolling || STATE.isMoving) return;
   STATE.isRolling = true;
+  haptic();
   sound.playDice();
 
   const die = document.getElementById('official-die');
@@ -1422,8 +1434,8 @@ function rollOfficialDie() {
         celebrationFX.burst(x, y, [boardCfg.dieBorder, '#ffd24c', '#ffffff'], 18);
       }
     }
-    STATE.isRolling = false;
     setTimeout(() => {
+      STATE.isRolling = false;
       movePlayerSpiral(roll);
     }, 180);
   }, 650);
@@ -1468,9 +1480,8 @@ function movePlayerSpiral(steps) {
       saveGameState();
     } else {
       clearInterval(timer);
-      STATE.isMoving = false;
       saveGameState();
-      setTimeout(() => triggerTileCard(p), 350);
+      setTimeout(() => { STATE.isMoving = false; triggerTileCard(p); }, 350);
     }
   }, 230);
 }
@@ -1482,18 +1493,7 @@ let lastCardFlipTimestamp = 0;
 function triggerTileCard(player) {
   const boardConfig = getBoardConfig(STATE.selectedGameKey);
   if (player.position >= boardConfig.maxTile) {
-    sound.playFanfare();
-    if (celebrationFX) {
-      celebrationFX.victoryCelebration();
-    }
-    showCardChallenge({
-      type: 'event',
-      category: '🏆 ¡CAMPEÓN!',
-      title: `¡${player.name.toUpperCase()} HA LLEGADO AL FINAL!`,
-      text: '¡Ha ganado la partida de La Guatoca! Todos los demás jugadores se terminan su vaso o shot ahora mismo.'
-    });
-    STATE.isGameActive = false;
-    saveGameState();
+    finishBoardGame(player);
     return;
   }
 
@@ -1552,6 +1552,7 @@ function triggerTileCard(player) {
 
 function showCardChallenge(card) {
   STATE.activeCard = card;
+  document.getElementById('official-die').disabled = true;
   sound.playCard();
 
   const modal = document.getElementById('modal-card-challenge');
@@ -1578,6 +1579,7 @@ function showCardChallenge(card) {
   if (actionsWrapper) actionsWrapper.classList.remove('visible');
 
   if (modal) modal.classList.add('open');
+  saveGameState();
 }
 
 function onCardWrapperClick() {
@@ -1608,6 +1610,9 @@ function onCardWrapperClick() {
 }
 
 function handleCardAction(isDone) {
+  if (!STATE.isGameActive || !STATE.activeCard || currentCardState !== 'SHOWING') return;
+  STATE.activeCard = null;
+  document.getElementById('official-die').disabled = false;
   currentCardState = 'NONE';
   const modal = document.getElementById('modal-card-challenge');
   const wrapper = document.getElementById('card-3d-wrapper');
@@ -1641,6 +1646,51 @@ function handleCardAction(isDone) {
   renderTurnPlayersHeader();
   renderSpiralBoard();
   saveGameState();
+}
+
+function haptic() {
+  if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(25);
+}
+
+function finishBoardGame(winner) {
+  const firstFinish = STATE.winnerId === null;
+  STATE.winnerId = winner.id;
+  STATE.isGameActive = false;
+  STATE.activeCard = null;
+  currentCardState = 'NONE';
+  document.getElementById('modal-card-challenge').classList.remove('open');
+  document.getElementById('official-die').disabled = true;
+  const leaders = key => {
+    const max = Math.max(...STATE.players.map(p => p[key] || 0));
+    return STATE.players.filter(p => (p[key] || 0) === max).map(p => p.name).join(', ');
+  };
+  document.getElementById('podium-winner').textContent = (PLAYER_AVATARS.find(a => a.id === winner.avatar) || PLAYER_AVATARS[0]).emoji + ' ' + winner.name;
+  document.getElementById('podium-rounds').textContent = 'Rondas jugadas: ' + STATE.round;
+  document.getElementById('podium-awards').textContent = 'Más Tomador: ' + leaders('drinks') + ' · Más Valiente: ' + leaders('completed');
+  const ranked = [winner, ...STATE.players.filter(p => p !== winner).sort((a, b) => b.position - a.position)];
+  document.getElementById('podium-stats').innerHTML = ranked.map(p => '<tr><th scope="row">' + escapeHtml(p.name) + '</th><td>' + (p.completed || 0) + '</td><td>' + (p.drinks || 0) + '</td></tr>').join('');
+  const modal = document.getElementById('modal-game-over');
+  modal.classList.add('open'); modal.setAttribute('aria-hidden', 'false');
+  document.getElementById('btn-rematch').focus();
+  if (firstFinish) { sound.playFanfare(); haptic(); if (celebrationFX) celebrationFX.victoryCelebration(); }
+  updateResumeButtonVisibility(); saveGameState();
+}
+
+function leavePodium(destination) {
+  const modal = document.getElementById('modal-game-over');
+  modal.classList.remove('open'); modal.setAttribute('aria-hidden', 'true');
+  STATE.winnerId = null; STATE.activeCard = null;
+  haptic(); sound.playStep();
+  if (destination === 'rematch') { startBoardGame(false); return; }
+  STATE.isGameActive = false;
+  if (destination === 'lobby') {
+    STATE.players = []; STATE.currentTurnIndex = 0; STATE.round = 1;
+    STATE.usedCardTexts.clear(); STATE.usedModeCardTexts.clear();
+    renderPlayersScreen(); showScreen('screen-players'); clearGameSession();
+    document.getElementById('btn-empezar-lobby').focus();
+  } else {
+    showScreen('screen-choose-game'); document.getElementById('btn-back-to-lobby').focus();
+  }
 }
 
 function escapeHtml(str) {

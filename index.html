@@ -66,7 +66,7 @@
           <span class="pwa-install-icon" aria-hidden="true">📲</span>
           <span class="pwa-install-text">Instalar Guatoca</span>
         </button>
-        <button class="header-btn settings-btn" id="btn-sound-toggle" title="Desactivar sonido" aria-pressed="true"><img src="assets/original/icon-settings.png" alt=""></button>
+        <button class="header-btn settings-btn" id="btn-sound-toggle" data-action="toggle-sound" title="Desactivar sonido" aria-pressed="true"><img src="assets/original/icon-settings.png" alt=""></button>
       </div>
 
       <h1 class="screen-title">¿QUIÉN TOMA HOY?</h1>
@@ -94,7 +94,7 @@
           <span class="pwa-install-icon" aria-hidden="true">📲</span>
           <span class="pwa-install-text">Instalar Guatoca</span>
         </button>
-        <button class="header-btn settings-btn" title="Configuración" aria-label="Configuración"><img src="assets/original/icon-settings.png" alt=""></button>
+        <button type="button" class="header-btn settings-btn" id="btn-sound-toggle-choose" data-action="toggle-sound" title="Desactivar sonido" aria-label="Desactivar sonido" aria-pressed="true"><img src="assets/original/icon-settings.png" alt=""></button>
       </div>
 
       <h1 class="screen-title">¿QUÉ VAMOS A JUGAR?</h1>
@@ -218,6 +218,20 @@
          MODALES
          ========================================================== -->
 
+    <div class="modal-overlay" id="modal-game-over" aria-hidden="true">
+      <section class="podium-sheet" role="dialog" aria-modal="true" aria-labelledby="podium-title">
+        <div class="podium-trophy" aria-hidden="true">🏆</div>
+        <h2 id="podium-title">¡TENEMOS CAMPEÓN!</h2><p class="podium-crown">👑 1.er lugar</p>
+        <h3 id="podium-winner"></h3><p id="podium-rounds"></p>
+        <table><caption>Resumen de la partida</caption><thead><tr><th>Jugador</th><th>Retos cumplidos</th><th>Tragos registrados</th></tr></thead><tbody id="podium-stats"></tbody></table>
+        <p id="podium-awards"></p>
+        <div class="podium-actions">
+          <button type="button" id="btn-rematch">🔄 REVANCHA / JUGAR DE NUEVO</button>
+          <button type="button" id="btn-change-board">🎲 CAMBIAR TABLERO</button>
+          <button type="button" id="btn-podium-lobby">👥 VOLVER AL LOBBY</button>
+        </div>
+      </section>
+    </div>
     <!-- Modal 1: Añadir Nuevo Jugador -->
     <div class="modal-overlay" id="modal-add-player">
       <div class="modal-sheet player-create-sheet">
